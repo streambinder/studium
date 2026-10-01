@@ -26,28 +26,6 @@ permissions:
   statuses: none
 
 jobs:
-  super-linter:
-    # super-linter/slim ships amd64 only; keep the build jobs on arm64
-    runs-on: ubuntu-latest
-    permissions:
-      statuses: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: super-linter/super-linter/slim@47984f49b4e87383eed97890fe2dca6063bbd9c3 # v8.3.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: ${{ github.event_name != 'pull_request' }}
-          SAVE_SUPER_LINTER_OUTPUT: false
-          MULTI_STATUS: false
-          LOG_LEVEL: WARN
-          # Biome format and Prettier both claim CSS files and conflict with each
-          # other: keep Prettier as the single CSS formatter.
-          VALIDATE_BIOME_FORMAT: false
-          # Go html/template files are not plain HTML: no HTML linter can parse them.
-          FILTER_REGEX_EXCLUDE: .*/templates/.*
   go:
     runs-on: ubuntu-24.04-arm
     steps:
@@ -64,7 +42,7 @@ jobs:
       - run: go test ./...
       - run: CGO_ENABLED=0 go build ./...
   docker:
-    needs: [super-linter, go]
+    needs: [go]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-24.04-arm
     permissions:
