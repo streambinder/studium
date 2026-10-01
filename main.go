@@ -76,13 +76,40 @@ func run(cfg Config) error {
 	outer.Handle("/", inner)
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
-		Handler:      outer,
+		Handler:      logRequests(outer),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 	log.Printf("studium in ascolto su :%s (dati in %s)", cfg.Port, cfg.DataDir)
 	return srv.ListenAndServe()
+}
+
+// statusRecorder captures the response status code for the request log.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+// logRequests writes one line per request (method, path, status, duration)
+// to the standard logger. The health endpoint is skipped so container
+// health probes do not drown the journal.
+func logRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/healthz" {
+			next.ServeHTTP(w, req)
+			return
+		}
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, req)
+		log.Printf("%s %s -> %d (%dms)", req.Method, req.URL.Path, rec.status, time.Since(start).Milliseconds())
+	})
 }
 
 // runHealthcheck probes the local /healthz endpoint for container HEALTHCHECK.

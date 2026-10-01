@@ -403,6 +403,7 @@ func (a *App) handleAddAvailability(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event availability added date=%s start=%d end=%d", date, start, end)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -417,6 +418,7 @@ func (a *App) handleDelAvailability(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		log.Printf("event availability deleted id=%d", id)
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -439,6 +441,7 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event session saved piece=%d date=%s minutes=%d confidence=%d", pieceID, todayStr(), minutes, conf)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -458,6 +461,7 @@ func (a *App) markSession(w http.ResponseWriter, r *http.Request, note string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event session marked piece=%d date=%s note=%s", pieceID, todayStr(), note)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -543,6 +547,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	log.Printf("event piece created id=%d kind=%s", pid, kind)
 	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
 }
 
@@ -577,7 +582,8 @@ func (a *App) handleSetDifficulty(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	res, err := a.db.Exec(`UPDATE pieces SET difficulty=? WHERE id=?`, clampDifficulty(r), id)
+	d := clampDifficulty(r)
+	res, err := a.db.Exec(`UPDATE pieces SET difficulty=? WHERE id=?`, d, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -586,6 +592,7 @@ func (a *App) handleSetDifficulty(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	log.Printf("event piece difficulty id=%d value=%d", id, d)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -629,12 +636,14 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event piece updated id=%d", id)
 	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
 }
 
 // setArchived runs an archive/restore UPDATE for one row and redirects.
-// The query is a static string chosen by the caller.
-func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect string) {
+// The query is a static string chosen by the caller; what labels the event
+// in the log.
+func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect, what string) {
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
@@ -644,15 +653,16 @@ func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirec
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event %s id=%d", what, id)
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
 func (a *App) handleArchivePiece(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/pezzi")
+	a.setArchived(w, r, `UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/pezzi", "piece archived")
 }
 
 func (a *App) handleRestorePiece(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE pieces SET archived_at=NULL WHERE id=?`, "/pezzi?archiviati=1")
+	a.setArchived(w, r, `UPDATE pieces SET archived_at=NULL WHERE id=?`, "/pezzi?archiviati=1", "piece restored")
 }
 
 // ---------- concorsi ----------
@@ -712,11 +722,14 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_, err := a.db.Exec(`INSERT INTO concorsi(name, audition_date, weight)
+	res, err := a.db.Exec(`INSERT INTO concorsi(name, audition_date, weight)
 		VALUES(?,?,?)`, name, date, validWeight(formInt(r, "weight", 1)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if id, ierr := res.LastInsertId(); ierr == nil {
+		log.Printf("event concorso created id=%d date=%s", id, date)
 	}
 	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
 }
@@ -736,15 +749,16 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("event concorso updated id=%d date=%s", id, date)
 	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
 }
 
 func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/concorsi")
+	a.setArchived(w, r, `UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/concorsi", "concorso archived")
 }
 
 func (a *App) handleRestoreConcorso(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE concorsi SET archived_at=NULL WHERE id=?`, "/concorsi")
+	a.setArchived(w, r, `UPDATE concorsi SET archived_at=NULL WHERE id=?`, "/concorsi", "concorso restored")
 }
 
 // ---------- diario ----------
@@ -892,5 +906,6 @@ func (a *App) handleSaveImpostazioni(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	log.Printf("event settings saved")
 	http.Redirect(w, r, "/impostazioni", http.StatusSeeOther)
 }
