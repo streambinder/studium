@@ -27,7 +27,8 @@ permissions:
 
 jobs:
   super-linter:
-    runs-on: ubuntu-24.04-arm
+    # super-linter/slim ships amd64 only; keep the build jobs on arm64
+    runs-on: ubuntu-latest
     permissions:
       statuses: write
     steps:
