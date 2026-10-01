@@ -4,10 +4,13 @@
 {{if .Piece.Excerpt}}<p class="meta excerpt">{{.Piece.Excerpt}}</p>{{end}}
 <p class="meta">{{range $i, $c := .Piece.Concorsi}}{{if $i}}, {{end}}{{$c.Name}}{{end}}</p>
 
-{{if .Spark}}
+{{if .Spark.Points}}
 <section class="panel">
 <h2>Confidenza nel tempo</h2>
-{{.Spark}}
+<svg viewBox="0 0 260 64" class="spark" role="img" aria-label="andamento confidenza">
+<polyline points="{{range $i, $p := .Spark.Points}}{{if $i}} {{end}}{{$p.X}},{{$p.Y}}{{end}}" fill="none" stroke-width="2"/>
+{{range .Spark.Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="3"/>{{end}}
+</svg>
 </section>
 {{end}}
 

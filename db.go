@@ -18,6 +18,12 @@ type Concorso struct {
 	Archived bool
 }
 
+// Piece kinds.
+const (
+	kindPasso = "passo"
+	kindSolo  = "solo"
+)
+
 type Piece struct {
 	ID        int64
 	Composer  string
@@ -149,8 +155,6 @@ func contains(s, sub string) bool {
 
 func todayStr() string { return time.Now().Format("2006-01-02") }
 
-func yesterdayStr() string { return time.Now().AddDate(0, 0, -1).Format("2006-01-02") }
-
 // daysBetween returns (b - a) in whole days for YYYY-MM-DD strings.
 func daysBetween(a, b string) (int, error) {
 	ta, err := time.Parse("2006-01-02", a)
@@ -164,6 +168,15 @@ func daysBetween(a, b string) (int, error) {
 	return int(tb.Sub(ta).Hours() / 24), nil
 }
 
+// scanConcorsi reads all concorsi from rows and closes them.
+func scanConcorsi(rows *sql.Rows) ([]Concorso, error) {
+	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
+		var c Concorso
+		err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived)
+		return c, err
+	})
+}
+
 func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 	q := `SELECT id, name, city, audition_date, weight, archived_at IS NOT NULL
 		FROM concorsi`
@@ -175,27 +188,7 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("rows close: %v", err)
-		}
-	}()
-	var out []Concorso
-	for rows.Next() {
-		var c Concorso
-		if err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived); err != nil {
-			return nil, err
-		}
-		out = append(out, c)
-	}
-	return out, rows.Err()
-}
-
-func (a *App) getConcorso(id int64) (Concorso, error) {
-	var c Concorso
-	err := a.db.QueryRow(`SELECT id, name, city, audition_date, weight, archived_at IS NOT NULL
-		FROM concorsi WHERE id=?`, id).Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived)
-	return c, err
+	return scanConcorsi(rows)
 }
 
 func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
@@ -205,20 +198,50 @@ func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("rows close: %v", err)
-		}
-	}()
-	var out []Concorso
-	for rows.Next() {
-		var c Concorso
-		if err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived); err != nil {
-			return nil, err
-		}
-		out = append(out, c)
+	return scanConcorsi(rows)
+}
+
+// closeRows checks rows.Err, closes rows (logging close failures) and
+// reports the iteration error, if any.
+func closeRows(rows *sql.Rows) error {
+	err := rows.Err()
+	if cerr := rows.Close(); cerr != nil {
+		log.Printf("rows close: %v", cerr)
 	}
-	return out, rows.Err()
+	return err
+}
+
+// closeRowsErr closes rows after a scan failure, reporting the scan error
+// unless closing surfaced an iteration error first.
+func closeRowsErr(rows *sql.Rows, err error) error {
+	if rerr := closeRows(rows); rerr != nil {
+		return rerr
+	}
+	return err
+}
+
+// collect scans every row with scan, then closes rows. Concorsi are fetched
+// by the caller afterwards: the pool is limited to a single connection and
+// nested queries would deadlock.
+func collect[T any](rows *sql.Rows, scan func(*sql.Rows) (T, error)) ([]T, error) {
+	var out []T
+	for rows.Next() {
+		v, err := scan(rows)
+		if err != nil {
+			return nil, closeRowsErr(rows, err)
+		}
+		out = append(out, v)
+	}
+	return out, closeRows(rows)
+}
+
+// scanPieces reads all pieces from rows and closes them.
+func scanPieces(rows *sql.Rows) ([]Piece, error) {
+	return collect(rows, func(rows *sql.Rows) (Piece, error) {
+		var p Piece
+		err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived)
+		return p, err
+	})
 }
 
 func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([]Piece, error) {
@@ -231,7 +254,7 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 		where += ` AND pc.concorso_id=?`
 		args = append(args, concorsoID)
 	}
-	if kind == "passo" || kind == "solo" {
+	if kind == kindPasso || kind == kindSolo {
 		where += ` AND p.kind=?`
 		args = append(args, kind)
 	}
@@ -243,29 +266,11 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 	if err != nil {
 		return nil, err
 	}
-	today := todayStr()
-	var out []Piece
-	for rows.Next() {
-		var p Piece
-		if err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived); err != nil {
-			if cerr := rows.Close(); cerr != nil {
-				log.Printf("rows close: %v", cerr)
-			}
-			return nil, err
-		}
-		out = append(out, p)
-	}
-	if err := rows.Err(); err != nil {
-		if cerr := rows.Close(); cerr != nil {
-			log.Printf("rows close: %v", cerr)
-		}
+	out, err := scanPieces(rows)
+	if err != nil {
 		return nil, err
 	}
-	if cerr := rows.Close(); cerr != nil {
-		log.Printf("rows close: %v", cerr)
-	}
-	// NOTE: concorsi are fetched after closing rows: the pool is limited to a
-	// single connection and nested queries would deadlock.
+	today := todayStr()
 	for i := range out {
 		cs, err := a.pieceConcorsi(out[i].ID)
 		if err != nil {

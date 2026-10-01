@@ -35,11 +35,11 @@ func dateIT(iso string) string {
 		weekdaysIT[t.Weekday()], t.Day(), monthsIT[int(t.Month())], t.Year())
 }
 
-func hhmm(min int) string {
-	if min < 0 {
+func hhmm(mins int) string {
+	if mins < 0 {
 		return "—"
 	}
-	return fmt.Sprintf("%02d:%02d", min/60, min%60)
+	return fmt.Sprintf("%02d:%02d", mins/60, mins%60)
 }
 
 func f1(f float64) string { return fmt.Sprintf("%.1f", f) }
@@ -79,7 +79,7 @@ func tmplFuncs() template.FuncMap {
 // "content") and executes "layout".
 func (a *App) render(w http.ResponseWriter, page string, data any) {
 	t, err := template.New("layout").Funcs(tmplFuncs()).ParseFS(
-		tmplFS, "templates/layout.html", "templates/"+page)
+		tmplFS, "templates/layout.html", "templates/partials.html", "templates/"+page)
 	if err != nil {
 		http.Error(w, "template: "+err.Error(), http.StatusInternalServerError)
 		return

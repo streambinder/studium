@@ -53,12 +53,19 @@ func main() {
 		os.Exit(runHealthcheck(port))
 	}
 	cfg := loadConfig()
+	if err := run(cfg); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// run opens the database, seeds it, and serves HTTP until it fails.
+func run(cfg Config) error {
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
-		log.Fatalf("data dir: %v", err)
+		return fmt.Errorf("data dir: %w", err)
 	}
 	db, err := openDB(filepath.Join(cfg.DataDir, "studium.db"))
 	if err != nil {
-		log.Fatalf("open db: %v", err)
+		return fmt.Errorf("open db: %w", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -66,20 +73,27 @@ func main() {
 		}
 	}()
 	if err := seedIfEmpty(db); err != nil {
-		log.Fatalf("seed: %v", err)
+		return fmt.Errorf("seed: %w", err)
 	}
 	app := &App{db: db}
 	inner := http.NewServeMux()
 	app.routes(inner)
 	outer := http.NewServeMux()
-	outer.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+	outer.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		if _, err := fmt.Fprintln(w, "ok"); err != nil {
 			log.Printf("healthz: %v", err)
 		}
 	})
 	outer.Handle("/", basicAuth(inner, cfg.User, cfg.Password))
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      outer,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 	log.Printf("studium in ascolto su :%s (dati in %s)", cfg.Port, cfg.DataDir)
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, outer))
+	return srv.ListenAndServe()
 }
 
 // runHealthcheck probes the local /healthz endpoint for container HEALTHCHECK.
