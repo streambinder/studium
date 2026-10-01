@@ -1140,10 +1140,21 @@ a:hover {
   text-align: center;
   text-wrap: balance;
   padding: 4px 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: block;
+}
+
+/* Map corners: round the outer corner of the corner tiles. */
+.ptile.ctl {
+  border-top-left-radius: 14px;
+}
+.ptile.ctr {
+  border-top-right-radius: 14px;
+}
+.ptile.cbl {
+  border-bottom-left-radius: 14px;
+}
+.ptile.cbr {
+  border-bottom-right-radius: 14px;
 }
 
 /* Preparation levels: empty → ready. */

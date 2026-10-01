@@ -24,6 +24,7 @@ type prepTile struct {
 	Prep       float64 // 0..1 raw preparation score, for sorting
 	X, Y, W, H float64 // treemap rect, percent of the map
 	Title      string  // tooltip text
+	Corner     string  // CSS classes for tiles on the map corners
 }
 
 type prepSession struct {
@@ -162,7 +163,29 @@ func (a *App) prepTiles(todayStr string) ([]prepTile, error) {
 		return tiles[i].PieceID < tiles[j].PieceID
 	})
 	layoutTreemap(tiles, 0, 0, 100, 100, true)
+	markCorners(tiles)
 	return tiles, nil
+}
+
+// markCorners flags the tiles touching the map corners so the template
+// can round their outer corner like the panel around the map.
+func markCorners(tiles []prepTile) {
+	const eps = 0.01
+	for i := range tiles {
+		t := &tiles[i]
+		if t.X < eps && t.Y < eps {
+			t.Corner += " ctl"
+		}
+		if t.X+t.W > 100-eps && t.Y < eps {
+			t.Corner += " ctr"
+		}
+		if t.X < eps && t.Y+t.H > 100-eps {
+			t.Corner += " cbl"
+		}
+		if t.X+t.W > 100-eps && t.Y+t.H > 100-eps {
+			t.Corner += " cbr"
+		}
+	}
 }
 
 // layoutTreemap assigns rects with slice-and-dice: alternating splits

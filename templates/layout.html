@@ -65,6 +65,36 @@
   document.querySelectorAll('[data-count]').forEach(function(el) {
     if (!el.closest('.reveal')) countUp(el);
   });
+
+  // Prep-map labels: shrink the font until the whole label fits its tile.
+  function fitTileLabels() {
+    document.querySelectorAll('.ptile').forEach(function(tile) {
+      var span = tile.querySelector('span');
+      if (!span) return;
+      span.style.fontSize = '';
+      var size = parseFloat(window.getComputedStyle(span).fontSize);
+      var maxH = tile.clientHeight - 6;
+      var guard = 80;
+      while (
+        (span.scrollHeight > maxH || span.scrollWidth > span.clientWidth + 1) &&
+        size > 6 &&
+        guard-- > 0
+      ) {
+        size -= 0.5;
+        span.style.fontSize = size + 'px';
+      }
+    });
+  }
+  fitTileLabels();
+  window.addEventListener('load', fitTileLabels);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitTileLabels);
+  }
+  var fitTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(fitTileLabels, 150);
+  });
 })();
 </script>
 </body>
