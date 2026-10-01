@@ -2,7 +2,7 @@
 
 Diario di studio giornaliero per una violoncellista che prepara concorsi d'orchestra: ogni giorno calcola cosa studiare con una formula spiegabile, traccia minuti e confidenza per pezzo, e tiene lo storico.
 
-## Esecuzione con docker
+## Esecuzione con Docker
 
 ```sh
 docker build -t studium .
@@ -23,7 +23,7 @@ Variabili d'ambiente:
 | `STUDIUM_USER`     | `agnese` | utente HTTP Basic Auth            |
 | `STUDIUM_PASSWORD` | —        | **obbligatoria**; senza non parte |
 
-Sviluppo locale: `go run .` con `STUDIUM_PASSWORD` impostata (richiede Go 1.24+).
+Sviluppo locale: `go run .` con `STUDIUM_PASSWORD` impostata (richiede Go 1.25+).
 
 ## La formula del piano giornaliero
 
