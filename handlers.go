@@ -187,7 +187,6 @@ type todayData struct {
 	BudgetPct       int // Planned as a percentage of Budget
 	NoBudget        bool
 	Items           []planItem
-	PrepMap         []prepTile
 }
 
 // upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
@@ -379,12 +378,6 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	} else if data.HasAvailability {
 		data.NoBudget = true
 	}
-	prep, err := a.prepTiles(today)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	data.PrepMap = prep
 	a.render(w, "today.html", data)
 }
 
@@ -764,7 +757,12 @@ func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 		}
 		days = append(days, d)
 	}
-	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days})
+	prep, err := a.prepTiles(todayStr())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep})
 }
 
 type pezzoDetailData struct {

@@ -81,17 +81,3 @@
 </section>
 {{end}}
 {{end}}
-{{if .PrepMap}}
-<section>
-<div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
-<div class="prepmap panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
-{{range .PrepMap}}<a class="ptile lv{{.Level}}" style="left:{{f1 .X}}%;top:{{f1 .Y}}%;width:{{f1 .W}}%;height:{{f1 .H}}%" href="/diario/pezzo/{{.PieceID}}" title="{{.Title}}">{{if .ShowLabel}}<span>{{.Label}}</span>{{end}}</a>
-{{end}}
-</div>
-<div class="preplegend reveal">
-<span class="preplegend-scale"><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i></span>
-<span>da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in <a href="/pezzi">Pezzi</a></span>
-</div>
-</section>
-{{end}}
-{{end}}

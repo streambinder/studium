@@ -23,8 +23,7 @@ type prepTile struct {
 	Rated      bool
 	Prep       float64 // 0..1 raw preparation score, for sorting
 	X, Y, W, H float64 // treemap rect, percent of the map
-	ShowLabel  bool
-	Title      string // tooltip text
+	Title      string  // tooltip text
 }
 
 type prepSession struct {
@@ -163,9 +162,6 @@ func (a *App) prepTiles(todayStr string) ([]prepTile, error) {
 		return tiles[i].PieceID < tiles[j].PieceID
 	})
 	layoutTreemap(tiles, 0, 0, 100, 100, true)
-	for i := range tiles {
-		tiles[i].ShowLabel = tiles[i].W >= 13 && tiles[i].H >= 15
-	}
 	return tiles, nil
 }
 
