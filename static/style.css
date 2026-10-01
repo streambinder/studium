@@ -683,33 +683,16 @@ button:hover,
   box-shadow: 0 10px 24px -8px rgba(138, 90, 46, 0.75);
 }
 
+/* Keep primary link-buttons readable: the global a:hover tint would
+   otherwise wash the white label out on the gradient. */
+a.btn:not(.secondary):hover {
+  color: #fff;
+}
+
 button:active,
 .btn:active {
   transform: translateY(1px) scale(0.99);
   box-shadow: 0 3px 10px -6px rgba(138, 90, 46, 0.7);
-}
-
-button::after,
-.btn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -80%;
-  width: 55%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    rgba(255, 255, 255, 0.35),
-    transparent
-  );
-  transform: skewX(-18deg);
-  transition: left 0.55s ease;
-}
-
-button:hover::after,
-.btn:hover::after {
-  left: 130%;
 }
 
 button.secondary,
@@ -724,11 +707,6 @@ button.secondary:hover,
 .btn.secondary:hover {
   background: rgba(138, 90, 46, 0.08);
   filter: none;
-}
-
-button.secondary::after,
-.btn.secondary::after {
-  display: none;
 }
 
 button.link {
