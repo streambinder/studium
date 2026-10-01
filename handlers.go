@@ -97,6 +97,62 @@ func formID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 	return id, true
 }
 
+// pieceOr404 loads the piece named by the URL path, answering 404 itself
+// when the id is invalid or the piece does not exist.
+func (a *App) pieceOr404(w http.ResponseWriter, r *http.Request) (Piece, bool) {
+	id, ok := pathID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return Piece{}, false
+	}
+	p, err := a.getPiece(id)
+	if err != nil {
+		http.NotFound(w, r)
+		return Piece{}, false
+	}
+	return p, true
+}
+
+// concorsoNameDate validates the mandatory concorso form fields, answering
+// 400 itself when the name or the date is missing.
+func concorsoNameDate(w http.ResponseWriter, r *http.Request) (name, date string, ok bool) {
+	name = strings.TrimSpace(r.FormValue("name"))
+	date = r.FormValue("date")
+	if name == "" || date == "" {
+		http.Error(w, "nome e data sono obbligatori", http.StatusBadRequest)
+		return "", "", false
+	}
+	return name, date, true
+}
+
+// concorsiOr500 lists the active concorsi, answering 500 itself on failure.
+func (a *App) concorsiOr500(w http.ResponseWriter) ([]Concorso, bool) {
+	concorsi, err := a.listConcorsi(false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, false
+	}
+	return concorsi, true
+}
+
+// queryRows runs a query, answering 500 itself on failure. The caller must
+// close the returned rows, e.g. via defer closeRowsLogged(rows).
+func (a *App) queryRows(w http.ResponseWriter, query string, args ...any) (*sql.Rows, bool) {
+	rows, err := a.db.Query(query, args...)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, false
+	}
+	return rows, true
+}
+
+// closeRowsLogged closes rows, logging failures. Use with defer.
+func closeRowsLogged(rows *sql.Rows) {
+	if err := rows.Close(); err != nil {
+		log.Printf("rows close: %v", err)
+	}
+}
+
 // ---------- oggi ----------
 
 type planItem struct {
@@ -425,9 +481,8 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	concorsi, err := a.listConcorsi(false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	concorsi, ok := a.concorsiOr500(w)
+	if !ok {
 		return
 	}
 	a.render(w, "pezzi.html", pezziData{
@@ -479,19 +534,12 @@ type pieceFormData struct {
 }
 
 func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
+	p, ok := a.pieceOr404(w, r)
 	if !ok {
-		http.NotFound(w, r)
 		return
 	}
-	p, err := a.getPiece(id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	concorsi, err := a.listConcorsi(false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	concorsi, ok := a.concorsiOr500(w)
+	if !ok {
 		return
 	}
 	sel := map[int64]bool{}
@@ -621,10 +669,8 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	name := strings.TrimSpace(r.FormValue("name"))
-	date := r.FormValue("date")
-	if name == "" || date == "" {
-		http.Error(w, "nome e data sono obbligatori", http.StatusBadRequest)
+	name, date, ok := concorsoNameDate(w, r)
+	if !ok {
 		return
 	}
 	_, err := a.db.Exec(`INSERT INTO concorsi(name, city, audition_date, weight)
@@ -641,10 +687,8 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	name := strings.TrimSpace(r.FormValue("name"))
-	date := r.FormValue("date")
-	if name == "" || date == "" {
-		http.Error(w, "nome e data sono obbligatori", http.StatusBadRequest)
+	name, date, ok := concorsoNameDate(w, r)
+	if !ok {
 		return
 	}
 	_, err := a.db.Exec(`UPDATE concorsi SET name=?, city=?, audition_date=?, weight=?
@@ -673,17 +717,12 @@ type dayRow struct {
 }
 
 func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
-	rows, err := a.db.Query(`SELECT date, COALESCE(SUM(minutes),0), COUNT(DISTINCT piece_id)
+	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0), COUNT(DISTINCT piece_id)
 		FROM sessions GROUP BY date ORDER BY date DESC`)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if !ok {
 		return
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("rows close: %v", err)
-		}
-	}()
+	defer closeRowsLogged(rows)
 	var days []dayRow
 	for rows.Next() {
 		var d dayRow
@@ -733,27 +772,16 @@ func buildSparkline(confs []int) sparkline {
 }
 
 func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
+	p, ok := a.pieceOr404(w, r)
 	if !ok {
-		http.NotFound(w, r)
 		return
 	}
-	p, err := a.getPiece(id)
-	if err != nil {
-		http.NotFound(w, r)
+	rows, ok := a.queryRows(w, `SELECT id, date, piece_id, minutes, confidence, note FROM sessions
+		WHERE piece_id=? ORDER BY date DESC, id DESC`, p.ID)
+	if !ok {
 		return
 	}
-	rows, err := a.db.Query(`SELECT id, date, piece_id, minutes, confidence, note FROM sessions
-		WHERE piece_id=? ORDER BY date DESC, id DESC`, id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("rows close: %v", err)
-		}
-	}()
+	defer closeRowsLogged(rows)
 	var sessions []Session
 	var confs []int // oldest -> newest for the sparkline
 	for rows.Next() {
@@ -786,9 +814,8 @@ func (a *App) handleImpostazioni(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	concorsi, err := a.listConcorsi(false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	concorsi, ok := a.concorsiOr500(w)
+	if !ok {
 		return
 	}
 	a.render(w, "impostazioni.html", impostazioniData{
