@@ -43,16 +43,6 @@ func hhmm(mins int) string {
 
 func f1(f float64) string { return fmt.Sprintf("%.1f", f) }
 
-// wdShort returns the 3-letter Italian weekday abbreviation for an ISO date.
-func wdShort(iso string) string {
-	t, err := time.Parse("2006-01-02", iso)
-	if err != nil {
-		return ""
-	}
-	short := []string{"dom", "lun", "mar", "mer", "gio", "ven", "sab"}
-	return short[t.Weekday()]
-}
-
 func confLabel(conf float64, rated bool) string {
 	if !rated {
 		return "mai valutata"
@@ -80,7 +70,6 @@ func tmplFuncs() template.FuncMap {
 		"dateIT":     dateIT,
 		"confLabel":  confLabel,
 		"sinceLabel": sinceLabel,
-		"wdShort":    wdShort,
 		"join":       strings.Join,
 	}
 }

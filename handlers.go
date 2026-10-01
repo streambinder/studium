@@ -184,7 +184,6 @@ type todayData struct {
 	Budget          int
 	NoBudget        bool
 	Items           []planItem
-	Game            GameStats
 }
 
 // upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
@@ -327,12 +326,6 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			data.Budget += v.EndMin - v.StartMin
 		}
 	}
-	game, err := a.gameStats(today, data.Budget)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	data.Game = game
 	if data.HasAvailability && data.Budget > 0 {
 		items, _, err := a.buildPlan(today)
 		if err != nil {
