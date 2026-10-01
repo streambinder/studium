@@ -1,0 +1,27 @@
+{{define "content"}}
+<h1>Modifica pezzo</h1>
+<section class="panel">
+<form method="post" action="/pezzi/{{.Piece.ID}}/modifica">
+<div class="row">
+<label>Compositore <input type="text" name="composer" value="{{.Piece.Composer}}" required></label>
+<label>Opera <input type="text" name="work" value="{{.Piece.Work}}" required></label>
+</div>
+<div class="row">
+<label>Movimento <input type="text" name="movement" value="{{.Piece.Movement}}"></label>
+<label>Tipo
+<select name="kind">
+<option value="passo" {{if eq .Piece.Kind "passo"}}selected{{end}}>passo d'orchestra</option>
+<option value="solo" {{if eq .Piece.Kind "solo"}}selected{{end}}>solistico</option>
+</select></label>
+</div>
+<label>Estratto / battute <input type="text" name="excerpt" value="{{.Piece.Excerpt}}"></label>
+<fieldset><legend>Concorsi</legend>
+{{range .Concorsi}}<label class="check"><input type="checkbox" name="concorso" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label>{{end}}
+</fieldset>
+<div class="row btns">
+<button type="submit">Salva</button>
+<a class="btn" href="/pezzi">Annulla</a>
+</div>
+</form>
+</section>
+{{end}}
