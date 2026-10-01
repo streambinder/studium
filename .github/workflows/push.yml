@@ -58,3 +58,26 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       - run: CGO_ENABLED=0 go build ./...
+  docker:
+    needs: [super-linter, go]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/streambinder/studium:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
