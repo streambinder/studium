@@ -65,6 +65,7 @@
 </select></label>
 </div>
 <label>Estratto / battute <input type="text" name="excerpt" placeholder="es. inizio–b.123"></label>
+<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 <fieldset><legend>Concorsi</legend>
 {{range .Concorsi}}<label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label>{{end}}
 </fieldset>

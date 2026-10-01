@@ -187,6 +187,7 @@ type todayData struct {
 	BudgetPct       int // Planned as a percentage of Budget
 	NoBudget        bool
 	Items           []planItem
+	PrepMap         []prepTile
 }
 
 // upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
@@ -378,6 +379,12 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	} else if data.HasAvailability {
 		data.NoBudget = true
 	}
+	prep, err := a.prepTiles(today)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data.PrepMap = prep
 	a.render(w, "today.html", data)
 }
 
@@ -503,6 +510,17 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func clampDifficulty(r *http.Request) int {
+	d, err := strconv.Atoi(r.FormValue("difficulty"))
+	if err != nil || d < 1 {
+		return 1
+	}
+	if d > 5 {
+		return 5
+	}
+	return d
+}
+
 func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -518,8 +536,8 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "compositore e opera sono obbligatori", http.StatusBadRequest)
 		return
 	}
-	res, err := a.db.Exec(`INSERT INTO pieces(composer, work, movement, excerpt, kind)
-		VALUES(?,?,?,?,?)`, composer, work, r.FormValue("movement"), r.FormValue("excerpt"), kind)
+	res, err := a.db.Exec(`INSERT INTO pieces(composer, work, movement, excerpt, kind, difficulty)
+		VALUES(?,?,?,?,?,?)`, composer, work, r.FormValue("movement"), r.FormValue("excerpt"), kind, clampDifficulty(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -573,9 +591,9 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 	if kind != kindSolo {
 		kind = kindPasso
 	}
-	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, excerpt=?, kind=?
+	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, excerpt=?, kind=?, difficulty=?
 		WHERE id=?`, r.FormValue("composer"), r.FormValue("work"),
-		r.FormValue("movement"), r.FormValue("excerpt"), kind, id)
+		r.FormValue("movement"), r.FormValue("excerpt"), kind, clampDifficulty(r), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

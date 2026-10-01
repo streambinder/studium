@@ -25,15 +25,16 @@ const (
 )
 
 type Piece struct {
-	ID        int64
-	Composer  string
-	Work      string
-	Movement  string
-	Excerpt   string
-	Kind      string // 'passo' | 'solo'
-	Archived  bool
-	Concorsi  []Concorso
-	HasActive bool // at least one non-archived concorso with date >= today
+	ID         int64
+	Composer   string
+	Work       string
+	Movement   string
+	Excerpt    string
+	Kind       string // 'passo' | 'solo'
+	Difficulty int    // 1..5, user-calibrated; drives the prep-map tile size
+	Archived   bool
+	Concorsi   []Concorso
+	HasActive  bool // at least one non-archived concorso with date >= today
 }
 
 type Session struct {
@@ -133,6 +134,13 @@ func migrate(db *sql.DB) error {
 		// duplicate column means the migration already ran; anything else is real.
 		if !isDupColumnErr(err) {
 			return fmt.Errorf("migrate archived_at: %w", err)
+		}
+	}
+	// pieces.difficulty was added after the first schema revision.
+	if _, err := db.Exec(`ALTER TABLE pieces ADD COLUMN difficulty INTEGER NOT NULL DEFAULT 3`); err != nil {
+		// duplicate column means the migration already ran; anything else is real.
+		if !isDupColumnErr(err) {
+			return fmt.Errorf("migrate difficulty: %w", err)
 		}
 	}
 	return nil
@@ -239,13 +247,13 @@ func collect[T any](rows *sql.Rows, scan func(*sql.Rows) (T, error)) ([]T, error
 func scanPieces(rows *sql.Rows) ([]Piece, error) {
 	return collect(rows, func(rows *sql.Rows) (Piece, error) {
 		var p Piece
-		err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived)
+		err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Difficulty, &p.Archived)
 		return p, err
 	})
 }
 
 func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([]Piece, error) {
-	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.excerpt, p.kind,
+	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.excerpt, p.kind, p.difficulty,
 		p.archived_at IS NOT NULL FROM pieces p`
 	args := []any{}
 	where := ""
@@ -289,8 +297,8 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 
 func (a *App) getPiece(id int64) (Piece, error) {
 	var p Piece
-	err := a.db.QueryRow(`SELECT id, composer, work, movement, excerpt, kind, archived_at IS NOT NULL
-		FROM pieces WHERE id=?`, id).Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived)
+	err := a.db.QueryRow(`SELECT id, composer, work, movement, excerpt, kind, difficulty, archived_at IS NOT NULL
+		FROM pieces WHERE id=?`, id).Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Difficulty, &p.Archived)
 	if err != nil {
 		return p, err
 	}

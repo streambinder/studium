@@ -18,6 +18,7 @@
 </select></label>
 </div>
 <label>Estratto / battute <input type="text" name="excerpt" value="{{.Piece.Excerpt}}"></label>
+<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}</output></label>
 <fieldset><legend>Concorsi</legend>
 {{range .Concorsi}}<label class="check"><input type="checkbox" name="concorso" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label>{{end}}
 </fieldset>

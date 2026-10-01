@@ -1117,3 +1117,103 @@ a:hover {
     opacity: 1;
   }
 }
+
+/* Prep map — GitHub-style contribution graph, per piece. */
+.prepmap {
+  position: relative;
+  aspect-ratio: 16 / 8;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.ptile {
+  position: absolute;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fffdf8;
+  overflow: hidden;
+  transition:
+    filter 0.18s ease,
+    transform 0.18s ease;
+  /* inset gap between tiles */
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+
+.ptile:hover {
+  filter: brightness(1.08);
+  transform: scale(1.02);
+  z-index: 2;
+}
+
+.ptile span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  padding: 4px 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Preparation levels: empty → ready. */
+.lv0 {
+  background: #e7dfcd;
+}
+.lv1 {
+  background: #e8cf9e;
+}
+.lv2 {
+  background: #d9a95e;
+}
+.lv3 {
+  background: #a06a2c;
+}
+.lv4 {
+  background: #5f3d1c;
+}
+.lv0 span,
+.lv1 span {
+  color: #57503f;
+}
+
+.preplegend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.preplegend-scale {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.preplegend-scale i {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .prepmap {
+    aspect-ratio: 4 / 5;
+  }
+
+  .ptile {
+    border-width: 2px;
+    border-radius: 6px;
+  }
+
+  .ptile span {
+    font-size: 0.62rem;
+  }
+}
