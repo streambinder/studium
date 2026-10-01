@@ -1,9 +1,13 @@
 {{define "content"}}
+<div class="page-head">
+<span class="overline">Obiettivi</span>
 <h1>Concorsi</h1>
-<p>I pesi (1–5) entrano nella formula del piano giornaliero: salvare ricalcola subito le priorità. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico.</p>
+<p class="meta">I pesi (1–5) entrano nella formula del piano giornaliero: salvare ricalcola subito le priorità. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico.</p>
+</div>
 
+<div class="stack">
 {{range .Rows}}
-<article class="card {{if .Archived}}archived{{end}}">
+<article class="card reveal {{if .Archived}}archived{{end}}">
 <form method="post" action="/concorsi/{{.ID}}">
 <div class="card-head">
 {{if .Archived}}<span class="badge muted">archiviato</span>
@@ -29,9 +33,10 @@
 {{end}}
 </article>
 {{end}}
+</div>
 
-<section class="panel">
-<h2>Nuovo concorso</h2>
+<section class="panel reveal">
+<div class="section-head"><h2>Nuovo concorso</h2></div>
 <form method="post" action="/concorsi">
 <div class="row">
 <label>Nome <input type="text" name="name" required placeholder="es. Teatro X — Violoncello di fila"></label>

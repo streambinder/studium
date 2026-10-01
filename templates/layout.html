@@ -4,20 +4,67 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · studium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header>
+<header class="site-header">
+<div class="header-inner">
+<a class="brand" href="/"><span class="brand-mark">S</span><span class="brand-name">studium</span></a>
 <nav>
-<a href="/">Oggi</a>
-<a href="/pezzi">Pezzi</a>
-<a href="/concorsi">Concorsi</a>
-<a href="/diario">Diario</a>
-<a href="/impostazioni">Impostazioni</a>
+<a href="/" class="{{if eq .Nav "oggi"}}active{{end}}">Oggi</a>
+<a href="/pezzi" class="{{if eq .Nav "pezzi"}}active{{end}}">Pezzi</a>
+<a href="/concorsi" class="{{if eq .Nav "concorsi"}}active{{end}}">Concorsi</a>
+<a href="/diario" class="{{if eq .Nav "diario"}}active{{end}}">Diario</a>
+<a href="/impostazioni" class="{{if eq .Nav "impostazioni"}}active{{end}}">Impostazioni</a>
 </nav>
+</div>
 </header>
 <main>
 {{template "content" .}}
 </main>
+<footer class="site-footer"><span>studium · diario di studio</span></footer>
+<script>
+(function() {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function countUp(el) {
+    var target = parseInt(el.getAttribute('data-count'), 10);
+    if (isNaN(target) || el.dataset.done) return;
+    el.dataset.done = '1';
+    if (reduce) { el.textContent = target; return; }
+    var dur = 900, t0 = null;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function arm(el) {
+    el.querySelectorAll('[data-count]').forEach(countUp);
+    if (el.hasAttribute('data-count')) countUp(el);
+  }
+
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+        arm(e.target);
+      }
+    });
+  }, {threshold: 0.1, rootMargin: '0px 0px -4% 0px'});
+
+  document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+  document.querySelectorAll('[data-count]').forEach(function(el) {
+    if (!el.closest('.reveal')) countUp(el);
+  });
+})();
+</script>
 </body>
 </html>{{end}}

@@ -1,12 +1,23 @@
 {{define "content"}}
+<div class="page-head">
+<span class="overline">Storico</span>
 <h1>Diario</h1>
+<p class="meta">Le sedute registrate, giorno per giorno.</p>
+</div>
+
+<div class="stack">
 {{range .Days}}
-<article class="card">
-<div class="card-head"><strong>{{dateIT .Date}}</strong>
-<span class="badge">{{.Minutes}} min</span>
-<span class="badge kind">{{.Pieces}} pezzi</span></div>
+<article class="card reveal">
+<div class="day-row">
+<span class="day-dot" aria-hidden="true"></span>
+<span class="day-date">{{dateIT .Date}}</span>
+<span class="spacer"></span>
+<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>
+<span class="badge kind">{{.Pieces}} pezzi</span>
+</div>
 </article>
 {{else}}
-<p>Nessuna seduta registrata finora.</p>
+<p class="empty">Nessuna seduta registrata finora.</p>
 {{end}}
+</div>
 {{end}}

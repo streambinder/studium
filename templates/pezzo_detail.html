@@ -1,13 +1,19 @@
 {{define "content"}}
+<div class="page-head">
+<span class="overline">Scheda pezzo</span>
 <h1>{{.Piece.Composer}} — {{.Piece.Work}}</h1>
 {{if .Piece.Movement}}<p class="meta">{{.Piece.Movement}}</p>{{end}}
 {{if .Piece.Excerpt}}<p class="meta excerpt">{{.Piece.Excerpt}}</p>{{end}}
 <p class="meta">{{range $i, $c := .Piece.Concorsi}}{{if $i}}, {{end}}{{$c.Name}}{{end}}</p>
+</div>
 
 {{if .Spark.Points}}
-<section class="panel">
-<h2>Confidenza nel tempo</h2>
+<section class="panel reveal">
+<div class="section-head"><h2>Confidenza nel tempo</h2></div>
 <svg viewBox="0 0 260 64" class="spark" role="img" aria-label="andamento confidenza">
+<defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#c99a5b"/><stop offset="1" stop-color="#8a5a2e"/>
+</linearGradient></defs>
 <polyline points="{{range $i, $p := .Spark.Points}}{{if $i}} {{end}}{{$p.X}},{{$p.Y}}{{end}}" fill="none" stroke-width="2"/>
 {{range .Spark.Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="3"/>{{end}}
 </svg>
@@ -15,11 +21,12 @@
 {{end}}
 
 <section>
-<h2>Sedute</h2>
+<div class="section-head"><h2>Sedute</h2><span class="meta">{{len .Sessions}}</span></div>
+<div class="stack">
 {{range .Sessions}}
-<article class="card">
+<article class="card reveal">
 <div class="card-head"><strong>{{dateIT .Date}}</strong>
-{{if gt .Minutes 0}}<span class="badge">{{.Minutes}} min</span>{{end}}
+{{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
 {{if gt .Confidence 0}}<span class="badge kind">confidenza {{.Confidence}}/5</span>{{end}}
 {{if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{end}}
 {{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{end}}
@@ -27,8 +34,9 @@
 {{if and (ne .Note "rimandato") (ne .Note "saltato") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
 </article>
 {{else}}
-<p>Nessuna seduta per questo pezzo.</p>
+<p class="empty">Nessuna seduta per questo pezzo.</p>
 {{end}}
+</div>
 </section>
 <p><a href="/pezzi">← torna ai pezzi</a></p>
 {{end}}

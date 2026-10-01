@@ -1,6 +1,9 @@
 {{define "content"}}
+<div class="page-head">
+<span class="overline">Repertorio</span>
 <h1>Modifica pezzo</h1>
-<section class="panel">
+</div>
+<section class="panel reveal">
 <form method="post" action="/pezzi/{{.Piece.ID}}/modifica">
 <div class="row">
 <label>Compositore <input type="text" name="composer" value="{{.Piece.Composer}}" required></label>
@@ -20,7 +23,7 @@
 </fieldset>
 <div class="row btns">
 <button type="submit">Salva</button>
-<a class="btn" href="/pezzi">Annulla</a>
+<a class="btn secondary" href="/pezzi">Annulla</a>
 </div>
 </form>
 </section>

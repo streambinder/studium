@@ -177,11 +177,14 @@ type planItem struct {
 
 type todayData struct {
 	Title           string
+	Nav             string
 	Date            string
 	HasAvailability bool
 	Free            []Availability
 	Busy            []Availability
 	Budget          int
+	Planned         int // sum of item minutes, for the budget bar
+	BudgetPct       int // Planned as a percentage of Budget
 	NoBudget        bool
 	Items           []planItem
 }
@@ -317,7 +320,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data := todayData{Title: "Oggi", Date: today, HasAvailability: len(avail) > 0}
+	data := todayData{Title: "Oggi", Nav: "oggi", Date: today, HasAvailability: len(avail) > 0}
 	for _, v := range avail {
 		if v.Kind == "busy" {
 			data.Busy = append(data.Busy, v)
@@ -364,6 +367,14 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			items[i].EndMin = cursor
 		}
 		data.Items = items
+		planned := 0
+		for _, it := range items {
+			planned += it.Minutes
+		}
+		data.Planned = planned
+		if data.Budget > 0 {
+			data.BudgetPct = planned * 100 / data.Budget
+		}
 	} else if data.HasAvailability {
 		data.NoBudget = true
 	}
@@ -465,6 +476,7 @@ func (a *App) handleSkip(w http.ResponseWriter, r *http.Request) {
 
 type pezziData struct {
 	Title          string
+	Nav            string
 	Pieces         []Piece
 	Concorsi       []Concorso
 	FilterConcorso int64
@@ -486,7 +498,7 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.render(w, "pezzi.html", pezziData{
-		Title: "Pezzi", Pieces: pieces, Concorsi: concorsi,
+		Title: "Pezzi", Nav: "pezzi", Pieces: pieces, Concorsi: concorsi,
 		FilterConcorso: concorsoID, FilterKind: kind, ShowArchived: showArchived,
 	})
 }
@@ -528,6 +540,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 
 type pieceFormData struct {
 	Title    string
+	Nav      string
 	Piece    Piece
 	Concorsi []Concorso
 	Selected map[int64]bool
@@ -547,7 +560,7 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 		sel[c.ID] = true
 	}
 	a.render(w, "pezzo_form.html", pieceFormData{
-		Title: "Modifica pezzo", Piece: p, Concorsi: concorsi, Selected: sel,
+		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel,
 	})
 }
 
@@ -627,6 +640,7 @@ type concorsoRow struct {
 
 type concorsiData struct {
 	Title string
+	Nav   string
 	Rows  []concorsoRow
 	Today string
 }
@@ -651,7 +665,7 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 			Pieces:    n,
 		})
 	}
-	a.render(w, "concorsi.html", concorsiData{Title: "Concorsi", Rows: rows, Today: today})
+	a.render(w, "concorsi.html", concorsiData{Title: "Concorsi", Nav: "concorsi", Rows: rows, Today: today})
 }
 
 func validWeight(n int) int {
@@ -732,11 +746,12 @@ func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 		}
 		days = append(days, d)
 	}
-	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Days": days})
+	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days})
 }
 
 type pezzoDetailData struct {
 	Title    string
+	Nav      string
 	Piece    Piece
 	Sessions []Session
 	Spark    sparkline
@@ -796,7 +811,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
-		Title: p.Composer + " — " + p.Work, Piece: p, Sessions: sessions, Spark: buildSparkline(confs),
+		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(confs),
 	})
 }
 
@@ -804,6 +819,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 
 type impostazioniData struct {
 	Title    string
+	Nav      string
 	Coeffs   Coeffs
 	Concorsi []Concorso
 }
@@ -819,7 +835,7 @@ func (a *App) handleImpostazioni(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	a.render(w, "impostazioni.html", impostazioniData{
-		Title: "Impostazioni", Coeffs: coeffs, Concorsi: concorsi,
+		Title: "Impostazioni", Nav: "impostazioni", Coeffs: coeffs, Concorsi: concorsi,
 	})
 }
 

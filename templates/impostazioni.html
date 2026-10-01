@@ -1,8 +1,12 @@
 {{define "content"}}
+<div class="page-head">
+<span class="overline">Configurazione</span>
 <h1>Impostazioni</h1>
+<p class="meta">Come il piano giornaliero sceglie e distribuisce i pezzi.</p>
+</div>
 
-<section class="panel">
-<h2>La formula del piano giornaliero</h2>
+<section class="panel reveal">
+<div class="section-head"><h2>La formula del piano giornaliero</h2></div>
 <p>Per ogni pezzo, ogni giorno:</p>
 <p class="formula">punteggio = base × urgenza × bisogno × ripresa (× 1,5 se rimandato da ieri)</p>
 <ul>
@@ -11,23 +15,25 @@
 <li><strong>bisogno</strong> = 1 + (5 − confidenza) / 5 — confidenza 1–5 dall'ultimo check-in (2,5 se mai valutata)</li>
 <li><strong>ripresa</strong> = 1 + min(giorni_dall_ultima_seduta / 7, {{f1 .Coeffs.RecencyCap}})</li>
 </ul>
-<p>I primi 8 pezzi per punteggio si dividono il budget del giorno in proporzione al punteggio (minimo 5 minuti, arrotondati ai 5).</p>
+<p class="meta">I primi 8 pezzi per punteggio si dividono il budget del giorno in proporzione al punteggio (minimo 5 minuti, arrotondati ai 5).</p>
 </section>
 
-<section class="panel">
-<h2>Coefficienti</h2>
+<section class="panel reveal">
+<div class="section-head"><h2>Coefficienti</h2></div>
 <form method="post" action="/impostazioni">
+<div class="row">
 <label>Pendenza urgenza (k) <input type="number" name="urgency_k" step="0.1" min="0.1" value="{{.Coeffs.UrgencyK}}" required></label>
 <label>Orizzonte urgenza in giorni <input type="number" name="urgency_horizon" step="1" min="1" value="{{.Coeffs.UrgencyHorizon}}" required></label>
+</div>
 <label>Tetto ripresa <input type="number" name="recency_cap" step="0.1" min="0.1" value="{{.Coeffs.RecencyCap}}" required></label>
 <button type="submit">Salva</button>
 </form>
 </section>
 
-<section class="panel">
-<h2>Pesi attuali dei concorsi</h2>
-<ul>
-{{range .Concorsi}}<li>{{.Name}} — peso <strong>{{.Weight}}</strong> (prova {{dateIT .Date}})</li>{{end}}
+<section class="panel reveal">
+<div class="section-head"><h2>Pesi attuali dei concorsi</h2></div>
+<ul class="timeline">
+{{range .Concorsi}}<li><span class="when">{{.Name}}</span> peso <strong>{{.Weight}}</strong> · prova {{dateIT .Date}}</li>{{end}}
 </ul>
 <p><a href="/concorsi">Modifica i concorsi →</a></p>
 </section>

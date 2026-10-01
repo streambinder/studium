@@ -1,36 +1,47 @@
 {{define "content"}}
-<h1>Oggi — {{dateIT .Date}}</h1>
-
 {{if not .HasAvailability}}
-<section class="panel">
+<section class="hero reveal">
+<span class="overline">Piano di studio</span>
+<h1>{{dateIT .Date}}</h1>
+<p class="hero-sub">Dimmi quando puoi studiare: aggiungi le fasce libere e, se serve, gli impegni che ti bloccano.</p>
+</section>
+<section class="panel reveal">
 <h2>Cosa studi oggi?</h2>
-<p>Dimmi quando puoi studiare: aggiungi le fasce libere e, se serve, gli impegni che ti bloccano.</p>
 {{template "availForm" .}}
 </section>
 {{else}}
-<section class="panel">
-<h2>Disponibilità di oggi</h2>
+<section class="hero reveal">
+<span class="overline">Piano di studio</span>
+<h1>{{dateIT .Date}}</h1>
+<div class="hero-stats">
+<div class="hero-stat"><span class="num" data-count="{{.Budget}}">{{.Budget}}</span><span class="lbl">minuti di budget</span></div>
+<div class="hero-stat"><span class="num" data-count="{{len .Items}}">{{len .Items}}</span><span class="lbl">pezzi in piano</span></div>
+<div class="hero-stat"><span class="num" data-count="{{.Planned}}">{{.Planned}}</span><span class="lbl">minuti pianificati</span></div>
+</div>
+<div class="budget-bar" role="img" aria-label="{{.Planned}} minuti pianificati su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
+</section>
+
+<section class="panel reveal">
+<div class="section-head"><h2>Disponibilità di oggi</h2></div>
 <ul class="windows">
 {{range .Free}}<li class="free">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}}
-<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit">✕</button></form></li>{{end}}
+<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
 {{range .Busy}}<li class="busy">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}} <em>(impegno)</em>
-<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit">✕</button></form></li>{{end}}
+<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
 </ul>
-<p>Budget di studio: <strong>{{.Budget}} minuti</strong></p>
-<details><summary>Aggiungi una fascia</summary>
-{{template "availForm" .}}
-</details>
+<details><summary>Aggiungi una fascia</summary><div class="details-body">{{template "availForm" .}}</div></details>
 </section>
 
 {{if .NoBudget}}
-<section class="panel"><p>Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
+<section class="panel reveal"><p class="empty">Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
 {{else if not .Items}}
-<section class="panel"><p>Nessun pezzo attivo nel piano: tutti i concorsi collegati si sono conclusi oppure i pezzi sono archiviati. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
+<section class="panel reveal"><p class="empty">Nessun pezzo attivo nel piano: tutti i concorsi collegati si sono conclusi oppure i pezzi sono archiviati. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
 {{else}}
 <section>
-<h2>Piano di studio</h2>
+<div class="section-head"><h2>Il piano</h2><span class="meta">{{len .Items}} pezzi · in ordine di priorità</span></div>
 {{range .Items}}
-<article class="card">
+<article class="card plan-card reveal">
+<span class="plan-rank" aria-hidden="true"></span>
 <div class="card-head">
 <strong>{{.Piece.Composer}} — {{.Piece.Work}}</strong>
 <span class="badge kind">{{.Piece.Kind}}</span>
@@ -41,6 +52,7 @@
 {{if .Piece.Excerpt}}<div class="meta excerpt">{{.Piece.Excerpt}}</div>{{end}}
 <div class="slot">{{if ge .StartMin 0}}{{hhmm .StartMin}}–{{hhmm .EndMin}} · {{end}}{{.Minutes}} min suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
+<div class="details-body">
 <ul>
 <li><strong>base {{f1 .Base}}</strong> — in {{len .Upcoming}} concorso{{if gt (len .Upcoming) 1}}i{{end}}:
 {{range $i, $c := .Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (peso {{$c.Weight}}){{end}}</li>
@@ -49,12 +61,13 @@
 <li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>
 </ul>
 <p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}}{{if .Pinned}} × 1,5 (rimandato da ieri){{end}} = <strong>{{f1 .Score}}</strong></p>
+</div>
 </details>
 <form method="post" class="checkin">
 <input type="hidden" name="piece_id" value="{{.Piece.ID}}">
 <div class="row">
 <label>Minuti <input type="number" name="minutes" value="{{.Minutes}}" min="0" max="600"></label>
-<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}"> <output>{{printf "%.0f" .Conf}}/5</output></label>
+<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>{{printf "%.0f" .Conf}}/5</output></label>
 </div>
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
 <div class="row btns">
