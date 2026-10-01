@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/subtle"
 	"embed"
 	"fmt"
 	"html/template"
@@ -96,18 +95,4 @@ func staticHandler() http.Handler {
 		panic(err)
 	}
 	return http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
-}
-
-func basicAuth(next http.Handler, user, password string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u, p, ok := r.BasicAuth()
-		if !ok ||
-			subtle.ConstantTimeCompare([]byte(u), []byte(user)) != 1 ||
-			subtle.ConstantTimeCompare([]byte(p), []byte(password)) != 1 {
-			w.Header().Set("WWW-Authenticate", `Basic realm="studium"`)
-			http.Error(w, "autenticazione richiesta", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }

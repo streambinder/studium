@@ -6,24 +6,22 @@ Diario di studio giornaliero per una violoncellista che prepara concorsi d'orche
 
 ```sh
 docker build -t studium .
-docker run -d --name studium -p 8080:8080 \
-  -e STUDIUM_PASSWORD='scegli-una-password' \
+docker run -d --name studium -p 127.0.0.1:8080:8080 \
   -v studium-data:/data \
   ghcr.io/streambinder/studium:latest
 ```
 
-Poi apri <http://localhost:8080> (utente predefinito `agnese`, password da `STUDIUM_PASSWORD`).
+Poi apri <http://localhost:8080>. L'app non fa autenticazione: in produzione va
+esposta solo dietro un reverse proxy che applica HTTP Basic Auth.
 
 Variabili d'ambiente:
 
-| variabile          | default  | descrizione                       |
-| ------------------ | -------- | --------------------------------- |
-| `STUDIUM_DATA_DIR` | `/data`  | directory del database SQLite     |
-| `PORT`             | `8080`   | porta HTTP                        |
-| `STUDIUM_USER`     | `agnese` | utente HTTP Basic Auth            |
-| `STUDIUM_PASSWORD` | —        | **obbligatoria**; senza non parte |
+| variabile          | default  | descrizione                   |
+| ------------------ | -------- | ----------------------------- |
+| `STUDIUM_DATA_DIR` | `/data`  | directory del database SQLite |
+| `PORT`             | `8080`   | porta HTTP                    |
 
-Sviluppo locale: `go run .` con `STUDIUM_PASSWORD` impostata (richiede Go 1.25+).
+Sviluppo locale: `go run .` (richiede Go 1.25+).
 
 ## La formula del piano giornaliero
 

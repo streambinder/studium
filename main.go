@@ -14,30 +14,20 @@ import (
 )
 
 type Config struct {
-	DataDir  string
-	Port     string
-	User     string
-	Password string
+	DataDir string
+	Port    string
 }
 
 func loadConfig() Config {
 	cfg := Config{
 		DataDir: os.Getenv("STUDIUM_DATA_DIR"),
 		Port:    os.Getenv("PORT"),
-		User:    os.Getenv("STUDIUM_USER"),
 	}
 	if cfg.DataDir == "" {
 		cfg.DataDir = "/data"
 	}
 	if cfg.Port == "" {
 		cfg.Port = "8080"
-	}
-	if cfg.User == "" {
-		cfg.User = "agnese"
-	}
-	cfg.Password = os.Getenv("STUDIUM_PASSWORD")
-	if cfg.Password == "" {
-		log.Fatal("STUDIUM_PASSWORD is required")
 	}
 	return cfg
 }
@@ -84,7 +74,9 @@ func run(cfg Config) error {
 			log.Printf("healthz: %v", err)
 		}
 	})
-	outer.Handle("/", basicAuth(inner, cfg.User, cfg.Password))
+	// Authentication is enforced by the reverse proxy in front of studium:
+	// the app itself serves everything, including /healthz, without auth.
+	outer.Handle("/", inner)
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      outer,
