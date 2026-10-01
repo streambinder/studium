@@ -8,7 +8,7 @@
 <div class="stack">
 {{range .Rows}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
-<form method="post" action="/concorsi/{{.ID}}">
+<form id="concorso-{{.ID}}" method="post" action="/concorsi/{{.ID}}">
 <div class="card-head">
 {{if .Archived}}<span class="badge muted">archiviato</span>
 {{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
@@ -22,15 +22,15 @@
 <label>Data prova <input type="date" name="date" value="{{.Date}}" required {{if .Archived}}disabled{{end}}></label>
 <label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="{{.Weight}}" {{if .Archived}}disabled{{end}} oninput="this.nextElementSibling.textContent=this.value"> <output>{{.Weight}}</output></label>
 </div>
-{{if not .Archived}}
-<div class="row btns"><button type="submit">Salva</button></div>
-{{end}}
 </form>
+<div class="row btns">
+{{if not .Archived}}<button type="submit" form="concorso-{{.ID}}">Salva</button>{{end}}
 {{if .Archived}}
 <form method="post" action="/concorsi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
 {{else}}
 <form method="post" action="/concorsi/{{.ID}}/archivia" class="inline"><button class="secondary" type="submit">Archivia</button></form>
 {{end}}
+</div>
 </article>
 {{end}}
 </div>
