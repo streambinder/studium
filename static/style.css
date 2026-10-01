@@ -648,7 +648,11 @@ button,
 .btn {
   position: relative;
   overflow: hidden;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  line-height: 1.25;
   padding: 0.65rem 1.25rem;
   font-size: 0.98rem;
   font-weight: 600;
@@ -732,6 +736,7 @@ button.link {
   border: none;
   color: var(--muted);
   padding: 0 0.25rem;
+  min-height: 0;
   font-size: 1rem;
   box-shadow: none;
 }
@@ -1128,7 +1133,7 @@ a:hover {
 
 .ptile {
   position: absolute;
-  border-radius: 8px;
+  border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1140,7 +1145,8 @@ a:hover {
     transform 0.18s ease;
   /* inset gap between tiles */
   background-clip: padding-box;
-  border: 3px solid transparent;
+  border: 6px solid transparent;
+  container-type: size;
 }
 
 .ptile:hover {
@@ -1150,32 +1156,33 @@ a:hover {
 }
 
 .ptile span {
-  font-size: 0.72rem;
+  font-size: clamp(8px, 12cqw, 22px);
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
+  text-wrap: balance;
   padding: 4px 6px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 /* Preparation levels: empty → ready. */
 .lv0 {
-  background: #e7dfcd;
+  background-color: #e7dfcd;
 }
 .lv1 {
-  background: #e8cf9e;
+  background-color: #e8cf9e;
 }
 .lv2 {
-  background: #d9a95e;
+  background-color: #d9a95e;
 }
 .lv3 {
-  background: #a06a2c;
+  background-color: #a06a2c;
 }
 .lv4 {
-  background: #5f3d1c;
+  background-color: #5f3d1c;
 }
 .lv0 span,
 .lv1 span {
@@ -1209,8 +1216,8 @@ a:hover {
   }
 
   .ptile {
-    border-width: 2px;
-    border-radius: 6px;
+    border-width: 4px;
+    border-radius: 3px;
   }
 
   .ptile span {
