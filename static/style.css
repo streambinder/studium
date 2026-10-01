@@ -1105,7 +1105,7 @@ a:hover {
 .prepmap {
   position: relative;
   aspect-ratio: 16 / 8;
-  padding: 10px;
+  padding: 5px;
   overflow: hidden;
 }
 
@@ -1166,16 +1166,16 @@ a:hover {
 
 /* Map corners: round the outer corner of the corner tiles. */
 .ptile.ctl {
-  border-top-left-radius: 14px;
+  border-top-left-radius: 20px;
 }
 .ptile.ctr {
-  border-top-right-radius: 14px;
+  border-top-right-radius: 20px;
 }
 .ptile.cbl {
-  border-bottom-left-radius: 14px;
+  border-bottom-left-radius: 20px;
 }
 .ptile.cbr {
-  border-bottom-right-radius: 14px;
+  border-bottom-right-radius: 20px;
 }
 
 /* Preparation levels: empty → ready. */
@@ -1223,6 +1223,7 @@ a:hover {
 @media (max-width: 640px) {
   .prepmap {
     aspect-ratio: 4 / 5;
+    padding: 3px;
   }
 
   .ptile {
