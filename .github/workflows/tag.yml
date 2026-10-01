@@ -32,6 +32,7 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
+            ghcr.io/streambinder/studium:latest
             ghcr.io/streambinder/studium:release
             ghcr.io/streambinder/studium:${{ github.ref_name }}
             ghcr.io/streambinder/studium:${{ github.sha }}
