@@ -1108,6 +1108,11 @@ a:hover {
   overflow: hidden;
 }
 
+.ptiles {
+  position: absolute;
+  inset: 5px;
+}
+
 .ptile {
   position: absolute;
   border-radius: 3px;
@@ -1120,9 +1125,6 @@ a:hover {
   transition:
     filter 0.18s ease,
     transform 0.18s ease;
-  /* inset gap between tiles */
-  background-clip: padding-box;
-  border: 6px solid transparent;
   container-type: size;
 }
 
@@ -1222,12 +1224,7 @@ a:hover {
 @media (max-width: 640px) {
   .prepmap {
     aspect-ratio: 4 / 5;
-    padding: 3px;
-  }
-
-  .ptile {
-    border-width: 4px;
-    border-radius: 3px;
+    padding: 5px;
   }
 
   .ptile span {
