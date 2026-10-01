@@ -393,16 +393,12 @@ func (a *App) handleAddAvailability(w http.ResponseWriter, r *http.Request) {
 	}
 	start, ok1 := parseHHMM(r.FormValue("start"))
 	end, ok2 := parseHHMM(r.FormValue("end"))
-	kind := r.FormValue("kind")
-	if kind != "busy" {
-		kind = "free"
-	}
 	if !ok1 || !ok2 || end <= start {
 		http.Error(w, "orario non valido", http.StatusBadRequest)
 		return
 	}
 	_, err := a.db.Exec(`INSERT INTO availability(date, start_min, end_min, label, kind)
-		VALUES(?,?,?,?,?)`, date, start, end, r.FormValue("label"), kind)
+		VALUES(?,?,?,?,'free')`, date, start, end, r.FormValue("label"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
