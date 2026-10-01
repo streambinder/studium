@@ -1,6 +1,31 @@
 {{define "content"}}
 <h1>Oggi — {{dateIT .Date}}</h1>
 
+<section class="panel hero">
+<p class="kicker">Il tuo ritmo</p>
+<div class="hero-grid">
+<div class="hero-ring">
+{{if ge .Game.RingPct 0}}
+<svg viewBox="0 0 84 84" class="ring" role="img" aria-label="progresso di oggi">
+<circle cx="42" cy="42" r="36" class="ring-bg"/>
+<circle cx="42" cy="42" r="36" class="ring-fg" pathLength="100" stroke-dasharray="{{.Game.RingPct}} 100"/>
+</svg>
+<div class="ring-num"><strong>{{.Game.TodayMin}}′</strong><span>di {{.Budget}}′</span></div>
+{{else}}
+<div class="ring-num plain"><strong>{{.Game.TodayMin}}′</strong><span>oggi</span></div>
+{{end}}
+</div>
+<div class="hero-stats">
+<div class="hstat"><span class="hnum">{{.Game.Streak}}</span><span class="hlab">{{if eq .Game.Streak 1}}giorno di fila{{else}}giorni di fila{{end}}</span></div>
+<div class="hstat"><span class="hnum">Livello {{.Game.Level}}</span><span class="hlab">{{.Game.XPInto}} / {{.Game.XPNeed}} XP</span><span class="xpbar"><i style="width:{{.Game.XPPct}}%"></i></span></div>
+</div>
+</div>
+<div class="week">
+{{range .Game.Week}}<div class="wday"><span class="wbar"><i style="height:{{.Pct}}%"></i></span><span class="wval">{{if .Minutes}}{{.Minutes}}′{{end}}</span><span class="wd">{{wdShort .Date}}</span></div>{{end}}
+</div>
+<p class="fine">1 XP al minuto · +10 XP con confidenza ≥ 4 · un livello ogni {{.Game.XPNeed}} XP</p>
+</section>
+
 {{if not .HasAvailability}}
 <section class="panel">
 <h2>Cosa studi oggi?</h2>

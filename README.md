@@ -1,6 +1,6 @@
 # studium
 
-Diario di studio giornaliero per una violoncellista che prepara concorsi d'orchestra: ogni giorno calcola cosa studiare con una formula spiegabile, traccia minuti e confidenza per pezzo, e tiene lo storico.
+Diario di studio giornaliero per chi prepara concorsi d'orchestra: ogni giorno calcola cosa studiare con una formula spiegabile, traccia minuti e confidenza per pezzo, e tiene lo storico.
 
 ## Esecuzione con Docker
 

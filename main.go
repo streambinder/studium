@@ -48,7 +48,7 @@ func main() {
 	}
 }
 
-// run opens the database, seeds it, and serves HTTP until it fails.
+// run opens the database and serves HTTP until it fails.
 func run(cfg Config) error {
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
 		return fmt.Errorf("data dir: %w", err)
@@ -62,9 +62,6 @@ func run(cfg Config) error {
 			log.Printf("db close: %v", err)
 		}
 	}()
-	if err := seedIfEmpty(db); err != nil {
-		return fmt.Errorf("seed: %w", err)
-	}
 	app := &App{db: db}
 	inner := http.NewServeMux()
 	app.routes(inner)
