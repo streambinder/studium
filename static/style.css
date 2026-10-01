@@ -1133,6 +1133,27 @@ a:hover {
   z-index: 2;
 }
 
+.diff-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.4rem 0 0.7rem;
+}
+.diff-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.diff-row input[type="range"] {
+  width: 130px;
+}
+.diff-state {
+  font-size: 0.85rem;
+  color: var(--accent-deep);
+}
+
 .ptile span {
   font-size: clamp(8px, 12cqw, 22px);
   font-weight: 600;

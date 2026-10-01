@@ -34,6 +34,7 @@
 <div class="meta concorsi">
 {{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{end}}
 </div>
+<div class="diff-row"><label>Difficoltà <input type="range" class="diff-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Difficulty}}"> <output>{{.Difficulty}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 <div class="row btns">
 <a class="btn" href="/diario/pezzo/{{.ID}}">Diario</a>
 <a class="btn secondary" href="/pezzi/{{.ID}}/modifica">Modifica</a>
@@ -72,4 +73,22 @@
 <button type="submit">Aggiungi</button>
 </form>
 </section>
+<script>
+document.querySelectorAll('.diff-slider').forEach(function(s) {
+  var out = s.parentElement.querySelector('output');
+  var state = s.parentElement.parentElement.querySelector('.diff-state');
+  s.addEventListener('input', function() { out.textContent = s.value; });
+  s.addEventListener('change', function() {
+    fetch('/pezzi/' + s.dataset.id + '/difficolta', {
+      method: 'POST',
+      body: new URLSearchParams({difficulty: s.value})
+    }).then(function(r) {
+      state.textContent = r.ok ? '✓ salvato' : 'errore, riprova';
+      setTimeout(function() { state.textContent = ''; }, 1800);
+    }).catch(function() {
+      state.textContent = 'errore, riprova';
+    });
+  });
+});
+</script>
 {{end}}

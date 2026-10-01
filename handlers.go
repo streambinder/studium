@@ -27,6 +27,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /pezzi", a.handleAddPiece)
 	mux.HandleFunc("GET /pezzi/{id}/modifica", a.handleEditPiece)
 	mux.HandleFunc("POST /pezzi/{id}/modifica", a.handleUpdatePiece)
+	mux.HandleFunc("POST /pezzi/{id}/difficolta", a.handleSetDifficulty)
 	mux.HandleFunc("POST /pezzi/{id}/archivia", a.handleArchivePiece)
 	mux.HandleFunc("POST /pezzi/{id}/ripristina", a.handleRestorePiece)
 	mux.HandleFunc("GET /concorsi", a.handleConcorsi)
@@ -573,6 +574,23 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "pezzo_form.html", pieceFormData{
 		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel,
 	})
+}
+
+func (a *App) handleSetDifficulty(w http.ResponseWriter, r *http.Request) {
+	id, ok := formID(w, r)
+	if !ok {
+		return
+	}
+	res, err := a.db.Exec(`UPDATE pieces SET difficulty=? WHERE id=?`, clampDifficulty(r), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
