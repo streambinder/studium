@@ -43,6 +43,9 @@ jobs:
           SAVE_SUPER_LINTER_OUTPUT: false
           MULTI_STATUS: false
           LOG_LEVEL: WARN
+          # Biome format and Prettier both claim CSS files and conflict with each
+          # other: keep Prettier as the single CSS formatter.
+          VALIDATE_BIOME_FORMAT: false
           # Go html/template files are not plain HTML: no HTML linter can parse them.
           FILTER_REGEX_EXCLUDE: .*/templates/.*
   go:
