@@ -16,7 +16,6 @@
 </div>
 <div class="row">
 <label>Nome <input type="text" name="name" value="{{.Name}}" required {{if .Archived}}disabled{{end}}></label>
-<label>Città <input type="text" name="city" value="{{.City}}" {{if .Archived}}disabled{{end}}></label>
 </div>
 <div class="row">
 <label>Data prova <input type="date" name="date" value="{{.Date}}" required {{if .Archived}}disabled{{end}}></label>
@@ -40,7 +39,6 @@
 <form method="post" action="/concorsi">
 <div class="row">
 <label>Nome <input type="text" name="name" required placeholder="es. Teatro X — Violoncello di fila"></label>
-<label>Città <input type="text" name="city" placeholder="es. Torino"></label>
 </div>
 <div class="row">
 <label>Data prova <input type="date" name="date" required></label>

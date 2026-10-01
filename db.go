@@ -12,7 +12,6 @@ import (
 type Concorso struct {
 	ID       int64
 	Name     string
-	City     string
 	Date     string // YYYY-MM-DD
 	Weight   int
 	Archived bool
@@ -180,13 +179,13 @@ func daysBetween(a, b string) (int, error) {
 func scanConcorsi(rows *sql.Rows) ([]Concorso, error) {
 	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
 		var c Concorso
-		err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived)
+		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived)
 		return c, err
 	})
 }
 
 func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
-	q := `SELECT id, name, city, audition_date, weight, archived_at IS NOT NULL
+	q := `SELECT id, name, audition_date, weight, archived_at IS NOT NULL
 		FROM concorsi`
 	if !includeArchived {
 		q += ` WHERE archived_at IS NULL`
@@ -200,7 +199,7 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 }
 
 func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
-	rows, err := a.db.Query(`SELECT c.id, c.name, c.city, c.audition_date, c.weight, c.archived_at IS NOT NULL
+	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL
 		FROM concorsi c JOIN piece_concorso pc ON pc.concorso_id=c.id
 		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
 	if err != nil {

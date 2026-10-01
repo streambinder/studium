@@ -712,8 +712,8 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_, err := a.db.Exec(`INSERT INTO concorsi(name, city, audition_date, weight)
-		VALUES(?,?,?,?)`, name, r.FormValue("city"), date, validWeight(formInt(r, "weight", 1)))
+	_, err := a.db.Exec(`INSERT INTO concorsi(name, audition_date, weight)
+		VALUES(?,?,?)`, name, date, validWeight(formInt(r, "weight", 1)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -730,8 +730,8 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_, err := a.db.Exec(`UPDATE concorsi SET name=?, city=?, audition_date=?, weight=?
-		WHERE id=?`, name, r.FormValue("city"), date, validWeight(formInt(r, "weight", 1)), id)
+	_, err := a.db.Exec(`UPDATE concorsi SET name=?, audition_date=?, weight=?
+		WHERE id=?`, name, date, validWeight(formInt(r, "weight", 1)), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
