@@ -851,7 +851,6 @@ label.check {
   background: transparent;
   color: var(--accent-deep);
   border: 1.5px dashed rgba(138, 90, 46, 0.5);
-  margin-top: 0.45rem;
   box-shadow: none;
 }
 
