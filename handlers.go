@@ -3,8 +3,6 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"sort"
@@ -82,6 +80,21 @@ func parseHHMM(s string) (int, bool) {
 func pathID(r *http.Request) (int64, bool) {
 	n, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	return n, err == nil && n > 0
+}
+
+// formID extracts the id from the URL path and parses the form body,
+// answering the error itself when either fails.
+func formID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, ok := pathID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return 0, false
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 0, false
+	}
+	return id, true
 }
 
 // ---------- oggi ----------
@@ -241,7 +254,7 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	return items, len(scores), nil
 }
 
-func (a *App) handleToday(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	today := todayStr()
 	avail, err := a.availabilityFor(today)
 	if err != nil {
@@ -429,8 +442,8 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	kind := r.FormValue("kind")
-	if kind != "solo" {
-		kind = "passo"
+	if kind != kindSolo {
+		kind = kindPasso
 	}
 	composer := strings.TrimSpace(r.FormValue("composer"))
 	work := strings.TrimSpace(r.FormValue("work"))
@@ -491,18 +504,13 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
+	id, ok := formID(w, r)
 	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	kind := r.FormValue("kind")
-	if kind != "solo" {
-		kind = "passo"
+	if kind != kindSolo {
+		kind = kindPasso
 	}
 	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, excerpt=?, kind=?
 		WHERE id=?`, r.FormValue("composer"), r.FormValue("work"),
@@ -538,30 +546,27 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
 }
 
-func (a *App) handleArchivePiece(w http.ResponseWriter, r *http.Request) {
+// setArchived runs an archive/restore UPDATE for one row and redirects.
+// The query is a static string chosen by the caller.
+func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect string) {
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
-	if _, err := a.db.Exec(`UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id); err != nil {
+	if _, err := a.db.Exec(query, id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
+func (a *App) handleArchivePiece(w http.ResponseWriter, r *http.Request) {
+	a.setArchived(w, r, `UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/pezzi")
 }
 
 func (a *App) handleRestorePiece(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if _, err := a.db.Exec(`UPDATE pieces SET archived_at=NULL WHERE id=?`, id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/pezzi?archiviati=1", http.StatusSeeOther)
+	a.setArchived(w, r, `UPDATE pieces SET archived_at=NULL WHERE id=?`, "/pezzi?archiviati=1")
 }
 
 // ---------- concorsi ----------
@@ -578,7 +583,7 @@ type concorsiData struct {
 	Today string
 }
 
-func (a *App) handleConcorsi(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 	today := todayStr()
 	cs, err := a.listConcorsi(true)
 	if err != nil {
@@ -632,13 +637,8 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
+	id, ok := formID(w, r)
 	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	name := strings.TrimSpace(r.FormValue("name"))
@@ -657,29 +657,11 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if _, err := a.db.Exec(`UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
+	a.setArchived(w, r, `UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/concorsi")
 }
 
 func (a *App) handleRestoreConcorso(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(r)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	if _, err := a.db.Exec(`UPDATE concorsi SET archived_at=NULL WHERE id=?`, id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
+	a.setArchived(w, r, `UPDATE concorsi SET archived_at=NULL WHERE id=?`, "/concorsi")
 }
 
 // ---------- diario ----------
@@ -690,7 +672,7 @@ type dayRow struct {
 	Pieces  int
 }
 
-func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 	rows, err := a.db.Query(`SELECT date, COALESCE(SUM(minutes),0), COUNT(DISTINCT piece_id)
 		FROM sessions GROUP BY date ORDER BY date DESC`)
 	if err != nil {
@@ -718,34 +700,36 @@ type pezzoDetailData struct {
 	Title    string
 	Piece    Piece
 	Sessions []Session
-	Spark    template.HTML
+	Spark    sparkline
 }
 
-func sparkline(confs []int) template.HTML {
+type sparkPoint struct {
+	X, Y string
+}
+
+// sparkline holds precomputed SVG coordinates; the template renders them
+// through html/template so nothing is ever injected as raw HTML.
+type sparkline struct {
+	Points []sparkPoint
+}
+
+func buildSparkline(confs []int) sparkline {
 	const W, H = 260, 64
-	if len(confs) == 0 {
-		return ""
-	}
-	var pts []string
+	var s sparkline
 	for i, c := range confs {
 		var x float64
 		if len(confs) == 1 {
-			x = W / 2
+			x = float64(W) / 2
 		} else {
-			x = float64(i) * W / float64(len(confs)-1)
+			x = float64(i) * float64(W) / float64(len(confs)-1)
 		}
 		y := float64(H) - 5 - float64(c-1)/4*(float64(H)-10)
-		pts = append(pts, fmt.Sprintf("%.1f,%.1f", x, y))
+		s.Points = append(s.Points, sparkPoint{
+			X: strconv.FormatFloat(x, 'f', 1, 64),
+			Y: strconv.FormatFloat(y, 'f', 1, 64),
+		})
 	}
-	var dots strings.Builder
-	for _, p := range pts {
-		xy := strings.Split(p, ",")
-		fmt.Fprintf(&dots, `<circle cx="%s" cy="%s" r="3"/>`, xy[0], xy[1])
-	}
-	return template.HTML(fmt.Sprintf(
-		`<svg viewBox="0 0 %d %d" class="spark" role="img" aria-label="andamento confidenza">`+
-			`<polyline points="%s" fill="none" stroke-width="2"/>%s</svg>`,
-		W, H, strings.Join(pts, " "), dots.String()))
+	return s
 }
 
 func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
@@ -784,7 +768,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
-		Title: p.Composer + " — " + p.Work, Piece: p, Sessions: sessions, Spark: sparkline(confs),
+		Title: p.Composer + " — " + p.Work, Piece: p, Sessions: sessions, Spark: buildSparkline(confs),
 	})
 }
 
@@ -796,7 +780,7 @@ type impostazioniData struct {
 	Concorsi []Concorso
 }
 
-func (a *App) handleImpostazioni(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleImpostazioni(w http.ResponseWriter, _ *http.Request) {
 	coeffs, err := a.getCoeffs()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

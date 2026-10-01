@@ -5,34 +5,7 @@
 <section class="panel">
 <h2>Cosa studi oggi?</h2>
 <p>Dimmi quando puoi studiare: aggiungi le fasce libere e, se serve, gli impegni che ti bloccano.</p>
-<form method="post" action="/disponibilita" class="avail-form">
-<input type="hidden" name="date" value="{{.Date}}">
-<div class="row">
-<label>Dalle <input type="time" name="start" value="09:00" required></label>
-<label>Alle <input type="time" name="end" value="12:00" required></label>
-</div>
-<div class="row">
-<label>Etichetta <input type="text" name="label" placeholder="es. mattina"></label>
-<label>Tipo
-<select name="kind">
-<option value="free">tempo libero</option>
-<option value="busy">impegno (non studio)</option>
-</select></label>
-</div>
-<button type="submit">Aggiungi fascia</button>
-<button type="button" id="preset3h">3 ore (9–12)</button>
-<button type="button" id="presetDay">tutto il giorno (9–18)</button>
-</form>
-<script>
-document.getElementById('preset3h').onclick = function() {
-  var f = document.querySelector('.avail-form');
-  f.start.value = '09:00'; f.end.value = '12:00';
-};
-document.getElementById('presetDay').onclick = function() {
-  var f = document.querySelector('.avail-form');
-  f.start.value = '09:00'; f.end.value = '18:00';
-};
-</script>
+{{template "availForm" .}}
 </section>
 {{else}}
 <section class="panel">
@@ -45,22 +18,7 @@ document.getElementById('presetDay').onclick = function() {
 </ul>
 <p>Budget di studio: <strong>{{.Budget}} minuti</strong></p>
 <details><summary>Aggiungi una fascia</summary>
-<form method="post" action="/disponibilita" class="avail-form">
-<input type="hidden" name="date" value="{{.Date}}">
-<div class="row">
-<label>Dalle <input type="time" name="start" required></label>
-<label>Alle <input type="time" name="end" required></label>
-</div>
-<div class="row">
-<label>Etichetta <input type="text" name="label" placeholder="es. pomeriggio"></label>
-<label>Tipo
-<select name="kind">
-<option value="free">tempo libero</option>
-<option value="busy">impegno (non studio)</option>
-</select></label>
-</div>
-<button type="submit">Aggiungi</button>
-</form>
+{{template "availForm" .}}
 </details>
 </section>
 

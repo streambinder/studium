@@ -1,0 +1,32 @@
+{{define "availForm"}}
+<form method="post" action="/disponibilita" class="avail-form">
+<input type="hidden" name="date" value="{{.Date}}">
+<div class="row">
+<label>Dalle <input type="time" name="start" value="09:00" required></label>
+<label>Alle <input type="time" name="end" value="12:00" required></label>
+</div>
+<div class="row">
+<label>Etichetta <input type="text" name="label" placeholder="es. mattina"></label>
+<label>Tipo
+<select name="kind">
+<option value="free">tempo libero</option>
+<option value="busy">impegno (non studio)</option>
+</select></label>
+</div>
+<button type="submit">Aggiungi fascia</button>
+<button type="button" class="preset3h">3 ore (9–12)</button>
+<button type="button" class="presetDay">tutto il giorno (9–18)</button>
+</form>
+<script>
+(function() {
+  var f = document.querySelector('.avail-form');
+  if (!f) return;
+  f.querySelector('.preset3h').onclick = function() {
+    f.start.value = '09:00'; f.end.value = '12:00';
+  };
+  f.querySelector('.presetDay').onclick = function() {
+    f.start.value = '09:00'; f.end.value = '18:00';
+  };
+})();
+</script>
+{{end}}
