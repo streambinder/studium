@@ -43,6 +43,8 @@ jobs:
           SAVE_SUPER_LINTER_OUTPUT: false
           MULTI_STATUS: false
           LOG_LEVEL: WARN
+          # Go html/template files are not plain HTML: no HTML linter can parse them.
+          FILTER_REGEX_EXCLUDE: .*/templates/.*
   go:
     runs-on: ubuntu-24.04-arm
     steps:

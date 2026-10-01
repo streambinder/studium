@@ -60,7 +60,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("db close: %v", err)
+		}
+	}()
 	if err := seedIfEmpty(db); err != nil {
 		log.Fatalf("seed: %v", err)
 	}
@@ -69,7 +73,9 @@ func main() {
 	app.routes(inner)
 	outer := http.NewServeMux()
 	outer.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "ok")
+		if _, err := fmt.Fprintln(w, "ok"); err != nil {
+			log.Printf("healthz: %v", err)
+		}
 	})
 	outer.Handle("/", basicAuth(inner, cfg.User, cfg.Password))
 	log.Printf("studium in ascolto su :%s (dati in %s)", cfg.Port, cfg.DataDir)
@@ -84,7 +90,11 @@ func runHealthcheck(port string) int {
 		fmt.Fprintln(os.Stderr, "healthcheck:", err)
 		return 1
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, "healthcheck close:", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		fmt.Fprintln(os.Stderr, "healthcheck: unexpected status", resp.Status)
 		return 1

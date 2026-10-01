@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -174,7 +175,11 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	var out []Concorso
 	for rows.Next() {
 		var c Concorso
@@ -200,7 +205,11 @@ func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	var out []Concorso
 	for rows.Next() {
 		var c Concorso
@@ -239,16 +248,22 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 	for rows.Next() {
 		var p Piece
 		if err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived); err != nil {
-			rows.Close()
+			if cerr := rows.Close(); cerr != nil {
+				log.Printf("rows close: %v", cerr)
+			}
 			return nil, err
 		}
 		out = append(out, p)
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("rows close: %v", cerr)
+		}
 		return nil, err
 	}
-	rows.Close()
+	if cerr := rows.Close(); cerr != nil {
+		log.Printf("rows close: %v", cerr)
+	}
 	// NOTE: concorsi are fetched after closing rows: the pool is limited to a
 	// single connection and nested queries would deadlock.
 	for i := range out {
@@ -344,7 +359,11 @@ func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
 	if err != nil {
 		return m, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	for rows.Next() {
 		var minutes int
 		var note string
@@ -365,7 +384,11 @@ func (a *App) availabilityFor(date string) ([]Availability, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	var out []Availability
 	for rows.Next() {
 		var v Availability
