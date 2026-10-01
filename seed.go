@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 )
 
 type seedConcorso struct {
@@ -217,7 +219,11 @@ func seedIfEmpty(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rerr := tx.Rollback(); rerr != nil && !errors.Is(rerr, sql.ErrTxDone) {
+			log.Printf("seed rollback: %v", rerr)
+		}
+	}()
 	ids := make([]int64, len(seedConcorsi))
 	for i, c := range seedConcorsi {
 		res, err := tx.Exec(`INSERT INTO concorsi(name, city, audition_date, weight)

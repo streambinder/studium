@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -115,6 +117,91 @@ type todayData struct {
 	Items           []planItem
 }
 
+// upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
+// with their weights, plus the days until the nearest one.
+func upcomingConcorsi(p Piece, today string) ([]Concorso, []int, int, error) {
+	var upcoming []Concorso
+	var weights []int
+	days := -1
+	for _, c := range p.Concorsi {
+		if c.Archived || c.Date < today {
+			continue
+		}
+		upcoming = append(upcoming, c)
+		weights = append(weights, c.Weight)
+		d, err := daysBetween(today, c.Date)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		if days < 0 || d < days {
+			days = d
+		}
+	}
+	return upcoming, weights, days, nil
+}
+
+// scorePiece computes the daily plan item for one piece. ok=false means the
+// piece is excluded from today's plan (no upcoming concorso or skipped).
+func (a *App) scorePiece(p Piece, today, yday string, coeffs Coeffs) (item planItem, ok bool, err error) {
+	upcoming, weights, days, err := upcomingConcorsi(p, today)
+	if err != nil {
+		return planItem{}, false, err
+	}
+	if len(upcoming) == 0 {
+		return planItem{}, false, nil
+	}
+	mark, err := a.todayMark(p.ID, today)
+	if err != nil {
+		return planItem{}, false, err
+	}
+	if mark.Skipped {
+		return planItem{}, false, nil
+	}
+	conf, rated, err := a.latestConfidence(p.ID)
+	if err != nil {
+		return planItem{}, false, err
+	}
+	if !rated {
+		conf = 2.5
+	}
+	since, practiced, err := a.daysSincePractice(p.ID, today)
+	if err != nil {
+		return planItem{}, false, err
+	}
+	sinceNever := !practiced
+	if sinceNever {
+		since = 30
+	}
+	pinned, err := a.postponedYesterday(p.ID, yday)
+	if err != nil {
+		return planItem{}, false, err
+	}
+	br := ComputeScore(ScoreInput{
+		Weights:    weights,
+		Days:       days,
+		Confidence: conf,
+		SinceDays:  since,
+		Pinned:     pinned,
+	}, coeffs)
+	return planItem{
+		Piece:      p,
+		Upcoming:   upcoming,
+		Base:       br.Base,
+		Days:       days,
+		Urgency:    br.Urgency,
+		Need:       br.Need,
+		Recency:    br.Recency,
+		Score:      br.Score,
+		Conf:       conf,
+		ConfRated:  rated,
+		Since:      since,
+		SinceNever: sinceNever,
+		Pinned:     pinned,
+		Logged:     mark.Logged,
+		StartMin:   -1,
+	}, true, nil
+}
+
 func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	coeffs, err := a.getCoeffs()
 	if err != nil {
@@ -130,76 +217,13 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	}
 	var items []planItem
 	for _, p := range pieces {
-		var upcoming []Concorso
-		var weights []int
-		days := -1
-		for _, c := range p.Concorsi {
-			if c.Archived || c.Date < today {
-				continue
-			}
-			upcoming = append(upcoming, c)
-			weights = append(weights, c.Weight)
-			d, derr := daysBetween(today, c.Date)
-			if derr != nil {
-				return nil, 0, derr
-			}
-			if days < 0 || d < days {
-				days = d
-			}
-		}
-		if len(upcoming) == 0 {
-			continue
-		}
-		mark, err := a.todayMark(p.ID, today)
+		item, ok, err := a.scorePiece(p, today, yday, coeffs)
 		if err != nil {
 			return nil, 0, err
 		}
-		if mark.Skipped {
-			continue
+		if ok {
+			items = append(items, item)
 		}
-		conf, rated, err := a.latestConfidence(p.ID)
-		if err != nil {
-			return nil, 0, err
-		}
-		if !rated {
-			conf = 2.5
-		}
-		since, ok, err := a.daysSincePractice(p.ID, today)
-		if err != nil {
-			return nil, 0, err
-		}
-		sinceNever := !ok
-		if sinceNever {
-			since = 30
-		}
-		pinned, err := a.postponedYesterday(p.ID, yday)
-		if err != nil {
-			return nil, 0, err
-		}
-		br := ComputeScore(ScoreInput{
-			Weights:    weights,
-			Days:       days,
-			Confidence: conf,
-			SinceDays:  since,
-			Pinned:     pinned,
-		}, coeffs)
-		items = append(items, planItem{
-			Piece:      p,
-			Upcoming:   upcoming,
-			Base:       br.Base,
-			Days:       days,
-			Urgency:    br.Urgency,
-			Need:       br.Need,
-			Recency:    br.Recency,
-			Score:      br.Score,
-			Conf:       conf,
-			ConfRated:  rated,
-			Since:      since,
-			SinceNever: sinceNever,
-			Pinned:     pinned,
-			Logged:     mark.Logged,
-			StartMin:   -1,
-		})
 	}
 	sort.SliceStable(items, func(i, j int) bool {
 		if items[i].Score != items[j].Score {
@@ -312,7 +336,10 @@ func (a *App) handleDelAvailability(w http.ResponseWriter, r *http.Request) {
 	}
 	id := formInt(r, "id", 0)
 	if id > 0 {
-		_, _ = a.db.Exec(`DELETE FROM availability WHERE id=?`, id)
+		if _, err := a.db.Exec(`DELETE FROM availability WHERE id=?`, id); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -417,9 +444,16 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pid, _ := res.LastInsertId()
+	pid, err := res.LastInsertId()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	for _, cid := range formIDs(r, "concorso") {
-		_, _ = a.db.Exec(`INSERT OR IGNORE INTO piece_concorso(piece_id, concorso_id) VALUES(?,?)`, pid, cid)
+		if _, err := a.db.Exec(`INSERT OR IGNORE INTO piece_concorso(piece_id, concorso_id) VALUES(?,?)`, pid, cid); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
 }
@@ -482,7 +516,11 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rerr := tx.Rollback(); rerr != nil && !errors.Is(rerr, sql.ErrTxDone) {
+			log.Printf("rollback: %v", rerr)
+		}
+	}()
 	if _, err := tx.Exec(`DELETE FROM piece_concorso WHERE piece_id=?`, id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -506,7 +544,10 @@ func (a *App) handleArchivePiece(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	_, _ = a.db.Exec(`UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id)
+	if _, err := a.db.Exec(`UPDATE pieces SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/pezzi", http.StatusSeeOther)
 }
 
@@ -516,7 +557,10 @@ func (a *App) handleRestorePiece(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	_, _ = a.db.Exec(`UPDATE pieces SET archived_at=NULL WHERE id=?`, id)
+	if _, err := a.db.Exec(`UPDATE pieces SET archived_at=NULL WHERE id=?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/pezzi?archiviati=1", http.StatusSeeOther)
 }
 
@@ -544,7 +588,10 @@ func (a *App) handleConcorsi(w http.ResponseWriter, r *http.Request) {
 	var rows []concorsoRow
 	for _, c := range cs {
 		var n int
-		_ = a.db.QueryRow(`SELECT COUNT(*) FROM piece_concorso WHERE concorso_id=?`, c.ID).Scan(&n)
+		if err := a.db.QueryRow(`SELECT COUNT(*) FROM piece_concorso WHERE concorso_id=?`, c.ID).Scan(&n); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		rows = append(rows, concorsoRow{
 			Concorso:  c,
 			Concluded: !c.Archived && c.Date < today,
@@ -615,7 +662,10 @@ func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	_, _ = a.db.Exec(`UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id)
+	if _, err := a.db.Exec(`UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
 }
 
@@ -625,7 +675,10 @@ func (a *App) handleRestoreConcorso(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	_, _ = a.db.Exec(`UPDATE concorsi SET archived_at=NULL WHERE id=?`, id)
+	if _, err := a.db.Exec(`UPDATE concorsi SET archived_at=NULL WHERE id=?`, id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
 }
 
@@ -644,7 +697,11 @@ func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	var days []dayRow
 	for rows.Next() {
 		var d dayRow
@@ -708,7 +765,11 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("rows close: %v", err)
+		}
+	}()
 	var sessions []Session
 	var confs []int // oldest -> newest for the sparkline
 	for rows.Next() {

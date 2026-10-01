@@ -141,6 +141,12 @@ h2 {
   margin: 0.4rem 0;
 }
 
+details summary {
+  cursor: pointer;
+  color: var(--accent);
+  margin: 0.4rem 0;
+}
+
 .reason {
   margin: 0.6rem 0;
   font-size: 0.9rem;
@@ -291,12 +297,6 @@ label.check {
 
 .spark circle {
   fill: var(--accent);
-}
-
-details summary {
-  cursor: pointer;
-  color: var(--accent);
-  margin: 0.4rem 0;
 }
 
 .avail-form button[type="button"] {
