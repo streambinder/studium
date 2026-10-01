@@ -1,0 +1,48 @@
+{{define "content"}}
+<h1>Concorsi</h1>
+<p>I pesi (1–5) entrano nella formula del piano giornaliero: salvare ricalcola subito le priorità. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico.</p>
+
+{{range .Rows}}
+<article class="card {{if .Archived}}archived{{end}}">
+<form method="post" action="/concorsi/{{.ID}}">
+<div class="card-head">
+{{if .Archived}}<span class="badge muted">archiviato</span>
+{{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
+<span class="meta">{{.Pieces}} pezzi collegati</span>
+</div>
+<div class="row">
+<label>Nome <input type="text" name="name" value="{{.Name}}" required {{if .Archived}}disabled{{end}}></label>
+<label>Città <input type="text" name="city" value="{{.City}}" {{if .Archived}}disabled{{end}}></label>
+</div>
+<div class="row">
+<label>Data prova <input type="date" name="date" value="{{.Date}}" required {{if .Archived}}disabled{{end}}></label>
+<label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="{{.Weight}}" {{if .Archived}}disabled{{end}} oninput="this.nextElementSibling.textContent=this.value"> <output>{{.Weight}}</output></label>
+</div>
+{{if not .Archived}}
+<div class="row btns"><button type="submit">Salva</button></div>
+{{end}}
+</form>
+{{if .Archived}}
+<form method="post" action="/concorsi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
+{{else}}
+<form method="post" action="/concorsi/{{.ID}}/archivia" class="inline"><button class="secondary" type="submit">Archivia</button></form>
+{{end}}
+</article>
+{{end}}
+
+<section class="panel">
+<h2>Nuovo concorso</h2>
+<form method="post" action="/concorsi">
+<div class="row">
+<label>Nome <input type="text" name="name" required placeholder="es. Teatro X — Violoncello di fila"></label>
+<label>Città <input type="text" name="city" placeholder="es. Torino"></label>
+</div>
+<div class="row">
+<label>Data prova <input type="date" name="date" required></label>
+<label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
+</div>
+<button type="submit">Aggiungi</button>
+</form>
+<p class="meta">I pezzi si collegano al concorso dalla pagina <a href="/pezzi">Pezzi</a> (modifica).</p>
+</section>
+{{end}}

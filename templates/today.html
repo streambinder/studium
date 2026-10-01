@@ -1,0 +1,113 @@
+{{define "content"}}
+<h1>Oggi — {{dateIT .Date}}</h1>
+
+{{if not .HasAvailability}}
+<section class="panel">
+<h2>Cosa studi oggi?</h2>
+<p>Dimmi quando puoi studiare: aggiungi le fasce libere e, se serve, gli impegni che ti bloccano.</p>
+<form method="post" action="/disponibilita" class="avail-form">
+<input type="hidden" name="date" value="{{.Date}}">
+<div class="row">
+<label>Dalle <input type="time" name="start" value="09:00" required></label>
+<label>Alle <input type="time" name="end" value="12:00" required></label>
+</div>
+<div class="row">
+<label>Etichetta <input type="text" name="label" placeholder="es. mattina"></label>
+<label>Tipo
+<select name="kind">
+<option value="free">tempo libero</option>
+<option value="busy">impegno (non studio)</option>
+</select></label>
+</div>
+<button type="submit">Aggiungi fascia</button>
+<button type="button" id="preset3h">3 ore (9–12)</button>
+<button type="button" id="presetDay">tutto il giorno (9–18)</button>
+</form>
+<script>
+document.getElementById('preset3h').onclick = function() {
+  var f = document.querySelector('.avail-form');
+  f.start.value = '09:00'; f.end.value = '12:00';
+};
+document.getElementById('presetDay').onclick = function() {
+  var f = document.querySelector('.avail-form');
+  f.start.value = '09:00'; f.end.value = '18:00';
+};
+</script>
+</section>
+{{else}}
+<section class="panel">
+<h2>Disponibilità di oggi</h2>
+<ul class="windows">
+{{range .Free}}<li class="free">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}}
+<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit">✕</button></form></li>{{end}}
+{{range .Busy}}<li class="busy">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}} <em>(impegno)</em>
+<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit">✕</button></form></li>{{end}}
+</ul>
+<p>Budget di studio: <strong>{{.Budget}} minuti</strong></p>
+<details><summary>Aggiungi una fascia</summary>
+<form method="post" action="/disponibilita" class="avail-form">
+<input type="hidden" name="date" value="{{.Date}}">
+<div class="row">
+<label>Dalle <input type="time" name="start" required></label>
+<label>Alle <input type="time" name="end" required></label>
+</div>
+<div class="row">
+<label>Etichetta <input type="text" name="label" placeholder="es. pomeriggio"></label>
+<label>Tipo
+<select name="kind">
+<option value="free">tempo libero</option>
+<option value="busy">impegno (non studio)</option>
+</select></label>
+</div>
+<button type="submit">Aggiungi</button>
+</form>
+</details>
+</section>
+
+{{if .NoBudget}}
+<section class="panel"><p>Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
+{{else if not .Items}}
+<section class="panel"><p>Nessun pezzo attivo nel piano: tutti i concorsi collegati si sono conclusi oppure i pezzi sono archiviati. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
+{{else}}
+<section>
+<h2>Piano di studio</h2>
+{{range .Items}}
+<article class="card">
+<div class="card-head">
+<strong>{{.Piece.Composer}} — {{.Piece.Work}}</strong>
+<span class="badge kind">{{.Piece.Kind}}</span>
+{{if .Pinned}}<span class="badge pin">rimandato da ieri</span>{{end}}
+{{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
+</div>
+{{if .Piece.Movement}}<div class="meta">{{.Piece.Movement}}</div>{{end}}
+{{if .Piece.Excerpt}}<div class="meta excerpt">{{.Piece.Excerpt}}</div>{{end}}
+<div class="slot">{{if ge .StartMin 0}}{{hhmm .StartMin}}–{{hhmm .EndMin}} · {{end}}{{.Minutes}} min suggeriti</div>
+<details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
+<ul>
+<li><strong>base {{f1 .Base}}</strong> — in {{len .Upcoming}} concorso{{if gt (len .Upcoming) 1}}i{{end}}:
+{{range $i, $c := .Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (peso {{$c.Weight}}){{end}}</li>
+<li><strong>urgenza {{f1 .Urgency}}</strong> — prova più vicina tra {{.Days}} giorni ({{(index .Upcoming 0).Name}})</li>
+<li><strong>bisogno {{f1 .Need}}</strong> — confidenza {{confLabel .Conf .ConfRated}}</li>
+<li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>
+</ul>
+<p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}}{{if .Pinned}} × 1,5 (rimandato da ieri){{end}} = <strong>{{f1 .Score}}</strong></p>
+</details>
+<form method="post" class="checkin">
+<input type="hidden" name="piece_id" value="{{.Piece.ID}}">
+<div class="row">
+<label>Minuti <input type="number" name="minutes" value="{{.Minutes}}" min="0" max="600"></label>
+<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}"> <output>{{printf "%.0f" .Conf}}/5</output></label>
+</div>
+<label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
+<div class="row btns">
+<button type="submit" formaction="/sessione">Registra</button>
+<button type="submit" formaction="/sessione/rimanda" class="secondary">Rimanda a domani</button>
+<button type="submit" formaction="/sessione/salta" class="secondary">Salta</button>
+</div>
+</form>
+</article>
+{{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}

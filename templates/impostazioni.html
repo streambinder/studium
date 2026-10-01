@@ -1,0 +1,34 @@
+{{define "content"}}
+<h1>Impostazioni</h1>
+
+<section class="panel">
+<h2>La formula del piano giornaliero</h2>
+<p>Per ogni pezzo, ogni giorno:</p>
+<p class="formula">punteggio = base × urgenza × bisogno × ripresa (× 1,5 se rimandato da ieri)</p>
+<ul>
+<li><strong>base</strong> = somma dei pesi dei concorsi <em>futuri</em> in cui compare il pezzo. I concorsi con data passata o archiviati non contano; un pezzo senza concorsi futuri esce dal piano.</li>
+<li><strong>urgenza</strong> = 1 + {{f1 .Coeffs.UrgencyK}} × max(0, 1 − giorni_alla_prova / {{f1 .Coeffs.UrgencyHorizon}})</li>
+<li><strong>bisogno</strong> = 1 + (5 − confidenza) / 5 — confidenza 1–5 dall'ultimo check-in (2,5 se mai valutata)</li>
+<li><strong>ripresa</strong> = 1 + min(giorni_dall_ultima_seduta / 7, {{f1 .Coeffs.RecencyCap}})</li>
+</ul>
+<p>I primi 8 pezzi per punteggio si dividono il budget del giorno in proporzione al punteggio (minimo 5 minuti, arrotondati ai 5).</p>
+</section>
+
+<section class="panel">
+<h2>Coefficienti</h2>
+<form method="post" action="/impostazioni">
+<label>Pendenza urgenza (k) <input type="number" name="urgency_k" step="0.1" min="0.1" value="{{.Coeffs.UrgencyK}}" required></label>
+<label>Orizzonte urgenza in giorni <input type="number" name="urgency_horizon" step="1" min="1" value="{{.Coeffs.UrgencyHorizon}}" required></label>
+<label>Tetto ripresa <input type="number" name="recency_cap" step="0.1" min="0.1" value="{{.Coeffs.RecencyCap}}" required></label>
+<button type="submit">Salva</button>
+</form>
+</section>
+
+<section class="panel">
+<h2>Pesi attuali dei concorsi</h2>
+<ul>
+{{range .Concorsi}}<li>{{.Name}} — peso <strong>{{.Weight}}</strong> (prova {{dateIT .Date}})</li>{{end}}
+</ul>
+<p><a href="/concorsi">Modifica i concorsi →</a></p>
+</section>
+{{end}}

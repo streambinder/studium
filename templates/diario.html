@@ -1,0 +1,12 @@
+{{define "content"}}
+<h1>Diario</h1>
+{{range .Days}}
+<article class="card">
+<div class="card-head"><strong>{{dateIT .Date}}</strong>
+<span class="badge">{{.Minutes}} min</span>
+<span class="badge kind">{{.Pieces}} pezzi</span></div>
+</article>
+{{else}}
+<p>Nessuna seduta registrata finora.</p>
+{{end}}
+{{end}}

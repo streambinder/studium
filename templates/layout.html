@@ -1,0 +1,23 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · studium</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+<nav>
+<a href="/">Oggi</a>
+<a href="/pezzi">Pezzi</a>
+<a href="/concorsi">Concorsi</a>
+<a href="/diario">Diario</a>
+<a href="/impostazioni">Impostazioni</a>
+</nav>
+</header>
+<main>
+{{template "content" .}}
+</main>
+</body>
+</html>{{end}}

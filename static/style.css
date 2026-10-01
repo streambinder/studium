@@ -1,0 +1,182 @@
+:root {
+  --bg: #faf8f4;
+  --card: #ffffff;
+  --ink: #22201c;
+  --muted: #8a8378;
+  --line: #e8e2d6;
+  --accent: #7c5c3e;
+  --accent-soft: #f3ece1;
+  --pin: #b3541e;
+  --done: #2e7d4f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  z-index: 10;
+}
+
+nav {
+  display: flex;
+  max-width: 760px;
+  margin: 0 auto;
+  overflow-x: auto;
+}
+
+nav a {
+  color: #f5f1e8;
+  text-decoration: none;
+  padding: 0.8rem 1rem;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+nav a:hover { background: #3a362f; }
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+h1 { font-size: 1.4rem; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.1rem; margin: 0 0 0.6rem; }
+
+.panel, .card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card.archived { opacity: 0.65; }
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.meta { color: var(--muted); font-size: 0.9rem; }
+.meta.excerpt { font-size: 0.85rem; }
+.meta.concorsi { margin-top: 0.3rem; }
+.muted { color: var(--muted); }
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--line);
+}
+
+.badge.kind { background: #eef3ee; color: #3c6b4f; border-color: #d8e4d8; }
+.badge.pin { background: #fbeede; color: var(--pin); border-color: #f0d9bd; }
+.badge.done { background: #e7f2ea; color: var(--done); border-color: #cfe3d6; }
+.badge.muted { background: #f1efe9; color: var(--muted); }
+
+.slot { font-weight: 600; margin: 0.4rem 0; }
+
+.reason { margin: 0.6rem 0; font-size: 0.9rem; }
+.reason summary { cursor: pointer; color: var(--accent); }
+.reason ul { margin: 0.4rem 0; padding-left: 1.2rem; }
+.formula {
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+label { display: block; margin: 0.4rem 0; font-size: 0.95rem; }
+input[type="text"], input[type="number"], input[type="time"],
+input[type="date"], select {
+  width: 100%;
+  padding: 0.55rem;
+  font-size: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  margin-top: 0.2rem;
+}
+
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.row { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; }
+.row.btns { margin-top: 0.7rem; align-items: center; }
+.row.btns > * { flex: 1 1 auto; }
+
+button, .btn {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+
+button.secondary, .btn.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0 0.2rem;
+  font-size: 1rem;
+}
+
+form.inline { display: inline; }
+
+.filters {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  align-items: end;
+}
+
+fieldset { border: 1px solid var(--line); border-radius: 8px; margin: 0.6rem 0; }
+legend { padding: 0 0.4rem; font-size: 0.9rem; color: var(--muted); }
+label.check { display: block; }
+
+.windows { list-style: none; padding: 0; margin: 0 0 0.6rem; }
+.windows li { padding: 0.3rem 0; border-bottom: 1px dashed var(--line); }
+.windows li.busy { color: var(--muted); }
+
+.spark { width: 100%; max-width: 320px; height: auto; }
+.spark polyline { stroke: var(--accent); }
+.spark circle { fill: var(--accent); }
+
+details summary { cursor: pointer; color: var(--accent); margin: 0.4rem 0; }
+
+.avail-form button[type="button"] {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  margin-top: 0.4rem;
+}

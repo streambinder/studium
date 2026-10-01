@@ -1,0 +1,408 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	_ "modernc.org/sqlite"
+)
+
+type Concorso struct {
+	ID       int64
+	Name     string
+	City     string
+	Date     string // YYYY-MM-DD
+	Weight   int
+	Archived bool
+}
+
+type Piece struct {
+	ID        int64
+	Composer  string
+	Work      string
+	Movement  string
+	Excerpt   string
+	Kind      string // 'passo' | 'solo'
+	Archived  bool
+	Concorsi  []Concorso
+	HasActive bool // at least one non-archived concorso with date >= today
+}
+
+type Session struct {
+	ID         int64
+	Date       string
+	PieceID    int64
+	Minutes    int
+	Confidence int
+	Note       string
+}
+
+type Availability struct {
+	ID       int64
+	Date     string
+	StartMin int
+	EndMin   int
+	Label    string
+	Kind     string // 'free' | 'busy'
+}
+
+func openDB(path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA journal_mode=WAL`); err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec(`PRAGMA foreign_keys=ON`); err != nil {
+		return nil, err
+	}
+	if err := migrate(db); err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func migrate(db *sql.DB) error {
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS concorsi(
+			id INTEGER PRIMARY KEY,
+			name TEXT NOT NULL,
+			city TEXT NOT NULL DEFAULT '',
+			audition_date TEXT NOT NULL,
+			weight INTEGER NOT NULL DEFAULT 1,
+			archived_at TEXT,
+			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS pieces(
+			id INTEGER PRIMARY KEY,
+			composer TEXT NOT NULL,
+			work TEXT NOT NULL,
+			movement TEXT NOT NULL DEFAULT '',
+			excerpt TEXT NOT NULL DEFAULT '',
+			kind TEXT NOT NULL DEFAULT 'passo',
+			archived_at TEXT,
+			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS piece_concorso(
+			piece_id INTEGER NOT NULL REFERENCES pieces(id) ON DELETE CASCADE,
+			concorso_id INTEGER NOT NULL REFERENCES concorsi(id) ON DELETE CASCADE,
+			PRIMARY KEY(piece_id, concorso_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS sessions(
+			id INTEGER PRIMARY KEY,
+			date TEXT NOT NULL,
+			piece_id INTEGER NOT NULL REFERENCES pieces(id) ON DELETE CASCADE,
+			minutes INTEGER NOT NULL DEFAULT 0,
+			confidence INTEGER NOT NULL DEFAULT 0,
+			note TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_sessions_piece_date ON sessions(piece_id, date)`,
+		`CREATE TABLE IF NOT EXISTS availability(
+			id INTEGER PRIMARY KEY,
+			date TEXT NOT NULL,
+			start_min INTEGER NOT NULL,
+			end_min INTEGER NOT NULL,
+			label TEXT NOT NULL DEFAULT '',
+			kind TEXT NOT NULL DEFAULT 'free',
+			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_availability_date ON availability(date)`,
+		`CREATE TABLE IF NOT EXISTS settings(
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL
+		)`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			return fmt.Errorf("migrate: %w", err)
+		}
+	}
+	// concorsi.archived_at was added after the first schema revision.
+	if _, err := db.Exec(`ALTER TABLE concorsi ADD COLUMN archived_at TEXT`); err != nil {
+		// duplicate column means the migration already ran; anything else is real.
+		if !isDupColumnErr(err) {
+			return fmt.Errorf("migrate archived_at: %w", err)
+		}
+	}
+	return nil
+}
+
+func isDupColumnErr(err error) bool {
+	return err != nil && contains(err.Error(), "duplicate column name")
+}
+
+func contains(s, sub string) bool {
+	return len(s) >= len(sub) && func() bool {
+		for i := 0; i+len(sub) <= len(s); i++ {
+			if s[i:i+len(sub)] == sub {
+				return true
+			}
+		}
+		return false
+	}()
+}
+
+func todayStr() string { return time.Now().Format("2006-01-02") }
+
+func yesterdayStr() string { return time.Now().AddDate(0, 0, -1).Format("2006-01-02") }
+
+// daysBetween returns (b - a) in whole days for YYYY-MM-DD strings.
+func daysBetween(a, b string) (int, error) {
+	ta, err := time.Parse("2006-01-02", a)
+	if err != nil {
+		return 0, err
+	}
+	tb, err := time.Parse("2006-01-02", b)
+	if err != nil {
+		return 0, err
+	}
+	return int(tb.Sub(ta).Hours() / 24), nil
+}
+
+func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
+	q := `SELECT id, name, city, audition_date, weight, archived_at IS NOT NULL
+		FROM concorsi`
+	if !includeArchived {
+		q += ` WHERE archived_at IS NULL`
+	}
+	q += ` ORDER BY archived_at IS NOT NULL, audition_date`
+	rows, err := a.db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Concorso
+	for rows.Next() {
+		var c Concorso
+		if err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+func (a *App) getConcorso(id int64) (Concorso, error) {
+	var c Concorso
+	err := a.db.QueryRow(`SELECT id, name, city, audition_date, weight, archived_at IS NOT NULL
+		FROM concorsi WHERE id=?`, id).Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived)
+	return c, err
+}
+
+func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
+	rows, err := a.db.Query(`SELECT c.id, c.name, c.city, c.audition_date, c.weight, c.archived_at IS NOT NULL
+		FROM concorsi c JOIN piece_concorso pc ON pc.concorso_id=c.id
+		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Concorso
+	for rows.Next() {
+		var c Concorso
+		if err := rows.Scan(&c.ID, &c.Name, &c.City, &c.Date, &c.Weight, &c.Archived); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([]Piece, error) {
+	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.excerpt, p.kind,
+		p.archived_at IS NOT NULL FROM pieces p`
+	args := []any{}
+	where := ""
+	if concorsoID > 0 {
+		q += ` JOIN piece_concorso pc ON pc.piece_id=p.id`
+		where += ` AND pc.concorso_id=?`
+		args = append(args, concorsoID)
+	}
+	if kind == "passo" || kind == "solo" {
+		where += ` AND p.kind=?`
+		args = append(args, kind)
+	}
+	if !includeArchived {
+		where += ` AND p.archived_at IS NULL`
+	}
+	q += ` WHERE 1=1` + where + ` ORDER BY p.composer, p.work, p.movement`
+	rows, err := a.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	today := todayStr()
+	var out []Piece
+	for rows.Next() {
+		var p Piece
+		if err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+	// NOTE: concorsi are fetched after closing rows: the pool is limited to a
+	// single connection and nested queries would deadlock.
+	for i := range out {
+		cs, err := a.pieceConcorsi(out[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		out[i].Concorsi = cs
+		for _, c := range cs {
+			if !c.Archived && c.Date >= today {
+				out[i].HasActive = true
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
+func (a *App) getPiece(id int64) (Piece, error) {
+	var p Piece
+	err := a.db.QueryRow(`SELECT id, composer, work, movement, excerpt, kind, archived_at IS NOT NULL
+		FROM pieces WHERE id=?`, id).Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Archived)
+	if err != nil {
+		return p, err
+	}
+	cs, err := a.pieceConcorsi(id)
+	if err != nil {
+		return p, err
+	}
+	p.Concorsi = cs
+	return p, nil
+}
+
+// latestConfidence returns the most recent rated confidence (0..5), rated=false if never rated.
+func (a *App) latestConfidence(pieceID int64) (conf float64, rated bool, err error) {
+	var c sql.NullInt64
+	err = a.db.QueryRow(`SELECT confidence FROM sessions
+		WHERE piece_id=? AND confidence>0 ORDER BY date DESC, id DESC LIMIT 1`, pieceID).Scan(&c)
+	if err == sql.ErrNoRows {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, err
+	}
+	return float64(c.Int64), true, nil
+}
+
+// daysSincePractice returns days since the last session with minutes>0;
+// ok=false when the piece was never practiced (caller uses the default of 30).
+func (a *App) daysSincePractice(pieceID int64, today string) (days int, ok bool, err error) {
+	var d sql.NullString
+	err = a.db.QueryRow(`SELECT MAX(date) FROM sessions WHERE piece_id=? AND minutes>0`, pieceID).Scan(&d)
+	if err != nil {
+		return 0, false, err
+	}
+	if !d.Valid {
+		return 0, false, nil
+	}
+	n, err := daysBetween(d.String, today)
+	if err != nil {
+		return 0, false, err
+	}
+	if n < 0 {
+		n = 0
+	}
+	return n, true, nil
+}
+
+// postponedYesterday reports whether the latest session for the piece is a
+// "rimandato" marker from yesterday (used for the 1.5x pinned boost).
+func (a *App) postponedYesterday(pieceID int64, yesterday string) (bool, error) {
+	var date, note string
+	err := a.db.QueryRow(`SELECT date, note FROM sessions WHERE piece_id=?
+		ORDER BY date DESC, id DESC LIMIT 1`, pieceID).Scan(&date, &note)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return date == yesterday && note == "rimandato", nil
+}
+
+type todayMark struct {
+	Logged  int
+	Skipped bool // a 'rimandato' or 'saltato' marker exists for today
+}
+
+// todayMark summarizes today's sessions for a piece.
+func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
+	var m todayMark
+	rows, err := a.db.Query(`SELECT minutes, note FROM sessions WHERE piece_id=? AND date=?`, pieceID, today)
+	if err != nil {
+		return m, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var minutes int
+		var note string
+		if err := rows.Scan(&minutes, &note); err != nil {
+			return m, err
+		}
+		m.Logged += minutes
+		if note == "rimandato" || note == "saltato" {
+			m.Skipped = true
+		}
+	}
+	return m, rows.Err()
+}
+
+func (a *App) availabilityFor(date string) ([]Availability, error) {
+	rows, err := a.db.Query(`SELECT id, date, start_min, end_min, label, kind FROM availability
+		WHERE date=? ORDER BY start_min`, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Availability
+	for rows.Next() {
+		var v Availability
+		if err := rows.Scan(&v.ID, &v.Date, &v.StartMin, &v.EndMin, &v.Label, &v.Kind); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}
+
+func (a *App) getCoeffs() (Coeffs, error) {
+	c := DefaultCoeffs()
+	vals := map[string]*float64{
+		"urgency_k":       &c.UrgencyK,
+		"urgency_horizon": &c.UrgencyHorizon,
+		"recency_cap":     &c.RecencyCap,
+	}
+	for k, p := range vals {
+		var s string
+		err := a.db.QueryRow(`SELECT value FROM settings WHERE key=?`, k).Scan(&s)
+		if err == sql.ErrNoRows {
+			continue
+		}
+		if err != nil {
+			return c, err
+		}
+		var f float64
+		if _, err := fmt.Sscanf(s, "%f", &f); err == nil && f > 0 {
+			*p = f
+		}
+	}
+	return c, nil
+}
+
+func (a *App) setCoeff(key string, v float64) error {
+	_, err := a.db.Exec(`INSERT INTO settings(key,value) VALUES(?,?)
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value`, key, fmt.Sprintf("%g", v))
+	return err
+}

@@ -1,0 +1,68 @@
+{{define "content"}}
+<h1>Pezzi</h1>
+
+<form method="get" action="/pezzi" class="filters">
+<label>Concorso
+<select name="concorso" onchange="this.form.submit()">
+<option value="0">tutti</option>
+{{range .Concorsi}}<option value="{{.ID}}" {{if eq $.FilterConcorso .ID}}selected{{end}}>{{.Name}}</option>{{end}}
+</select></label>
+<label>Tipo
+<select name="kind" onchange="this.form.submit()">
+<option value="">tutti</option>
+<option value="passo" {{if eq $.FilterKind "passo"}}selected{{end}}>passi</option>
+<option value="solo" {{if eq $.FilterKind "solo"}}selected{{end}}>solistici</option>
+</select></label>
+<label><input type="checkbox" name="archiviati" value="1" {{if .ShowArchived}}checked{{end}} onchange="this.form.submit()"> mostra archiviati</label>
+</form>
+
+{{range .Pieces}}
+<article class="card {{if .Archived}}archived{{end}}">
+<div class="card-head">
+<strong>{{.Composer}} — {{.Work}}</strong>
+<span class="badge kind">{{.Kind}}</span>
+{{if .Archived}}<span class="badge muted">archiviato</span>
+{{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
+</div>
+{{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
+{{if .Excerpt}}<div class="meta excerpt">{{.Excerpt}}</div>{{end}}
+<div class="meta concorsi">
+{{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{end}}
+</div>
+<div class="row btns">
+<a class="btn" href="/diario/pezzo/{{.ID}}">Diario</a>
+<a class="btn" href="/pezzi/{{.ID}}/modifica">Modifica</a>
+{{if .Archived}}
+<form method="post" action="/pezzi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
+{{else}}
+<form method="post" action="/pezzi/{{.ID}}/archivia" class="inline"><button class="secondary" type="submit">Archivia</button></form>
+{{end}}
+</div>
+</article>
+{{else}}
+<p>Nessun pezzo con questi filtri.</p>
+{{end}}
+
+<section class="panel">
+<h2>Aggiungi un pezzo</h2>
+<form method="post" action="/pezzi">
+<div class="row">
+<label>Compositore <input type="text" name="composer" required></label>
+<label>Opera <input type="text" name="work" required></label>
+</div>
+<div class="row">
+<label>Movimento <input type="text" name="movement" placeholder="es. II mov. Andante"></label>
+<label>Tipo
+<select name="kind">
+<option value="passo">passo d'orchestra</option>
+<option value="solo">solistico</option>
+</select></label>
+</div>
+<label>Estratto / battute <input type="text" name="excerpt" placeholder="es. inizio–b.123"></label>
+<fieldset><legend>Concorsi</legend>
+{{range .Concorsi}}<label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label>{{end}}
+</fieldset>
+<button type="submit">Aggiungi</button>
+</form>
+</section>
+{{end}}
