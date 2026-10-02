@@ -363,17 +363,15 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 // autoSkipOverflow drops the plan pieces that no longer fit today's
 // remaining time, least urgent first: unpracticed pieces whose summed
 // suggested minutes exceed what is left are marked 'saltato' for
-// today, so they leave the plan with a trace in the diary. At least
-// the most urgent unpracticed piece always survives.
+// today, so they leave the plan with a trace in the diary.
 func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([]planItem, error) {
-	sum, open := 0, 0
+	sum := 0
 	for _, it := range items {
 		if !it.Practiced {
 			sum += it.Minutes
-			open++
 		}
 	}
-	for sum > remaining && open > 1 {
+	for sum > remaining {
 		victim := -1
 		for i := len(items) - 1; i >= 0; i-- {
 			if !items[i].Practiced {
@@ -390,7 +388,6 @@ func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([
 		}
 		log.Printf("event session auto-skipped piece=%d date=%s", items[victim].Piece.ID, today)
 		sum -= items[victim].Minutes
-		open--
 		items = append(items[:victim], items[victim+1:]...)
 	}
 	return items, nil

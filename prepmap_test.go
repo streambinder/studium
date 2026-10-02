@@ -155,13 +155,13 @@ func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
 	if n != 1 {
 		t.Fatalf("want one saltato marker for piece 3, got %d", n)
 	}
-	// With almost no time left, the last unpracticed piece still survives.
+	// With almost no time left, everything unpracticed is trimmed.
 	got, err = a.autoSkipOverflow(got, 1, "2026-10-02")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 2 {
-		t.Fatalf("most urgent unpracticed piece must survive, got %+v", got)
+	if len(got) != 1 || got[0].Piece.ID != 1 {
+		t.Fatalf("want only the practiced piece left, got %+v", got)
 	}
 }
 
