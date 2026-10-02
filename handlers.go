@@ -188,6 +188,7 @@ type todayData struct {
 	BudgetPct       int // Planned as a percentage of Budget
 	NoBudget        bool
 	Items           []planItem
+	Pieces          []Piece // all active pieces, for the manual session form
 }
 
 // upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
@@ -379,6 +380,12 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	} else if data.HasAvailability {
 		data.NoBudget = true
 	}
+	pieces, err := a.listPieces(0, "", false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data.Pieces = pieces
 	a.render(w, "today.html", data)
 }
 

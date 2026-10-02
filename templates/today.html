@@ -32,6 +32,27 @@
 <details><summary>Aggiungi una fascia</summary><div class="details-body">{{template "availForm" .}}</div></details>
 </section>
 
+<section class="panel reveal">
+<details><summary>Registra una sessione a mano</summary>
+<div class="details-body">
+<form method="post" action="/sessione" class="checkin">
+<div class="row">
+<label>Pezzo <select name="piece_id" required>
+<option value="">— scegli —</option>
+{{range .Pieces}}<option value="{{.ID}}">{{.Composer}} — {{.Work}}{{if .Movement}} ({{.Movement}}){{end}}</option>{{end}}
+</select></label>
+<label>Minuti <input type="number" name="minutes" value="10" min="0" max="600"></label>
+</div>
+<div class="row">
+<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>3/5</output></label>
+</div>
+<div class="row btns">
+<button type="submit">Registra</button>
+</div>
+</form>
+</div></details>
+</section>
+
 {{if .NoBudget}}
 <section class="panel reveal"><p class="empty">Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
 {{else if not .Items}}
