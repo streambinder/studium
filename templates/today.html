@@ -78,7 +78,7 @@
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
 {{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
-<div class="slot">{{if ge .StartMin 0}}{{hhmm .StartMin}}–{{hhmm .EndMin}} · {{end}}{{.Minutes}} min suggeriti</div>
+<div class="slot">{{.Minutes}} min suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
 <div class="details-body">
 <ul>

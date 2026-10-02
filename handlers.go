@@ -169,8 +169,6 @@ type planItem struct {
 	SinceNever bool
 	Practiced  bool // a real session for this piece exists for today
 	Minutes    int
-	StartMin   int // -1 when it does not fit any free window
-	EndMin     int
 	Logged     int
 }
 
@@ -321,7 +319,6 @@ func (a *App) scorePiece(p Piece, today string, coeffs Coeffs) (item planItem, o
 		SinceNever: sinceNever,
 		Practiced:  mark.Practiced,
 		Logged:     mark.Logged,
-		StartMin:   -1,
 	}, true, nil
 }
 
@@ -441,28 +438,6 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		}
-		// Lay the pieces out sequentially across the free windows.
-		wi := 0
-		cursor := -1
-		for i := range items {
-			for wi < len(data.Free) {
-				wstart := data.Free[wi].StartMin
-				if cursor < wstart {
-					cursor = wstart
-				}
-				if cursor+items[i].Minutes <= data.Free[wi].EndMin {
-					break
-				}
-				wi++
-				cursor = -1
-			}
-			if wi >= len(data.Free) {
-				break // does not fit: StartMin stays -1 ("fuori fascia")
-			}
-			items[i].StartMin = cursor
-			cursor += items[i].Minutes
-			items[i].EndMin = cursor
 		}
 		data.Items = items
 	} else if data.HasAvailability {
