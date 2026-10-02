@@ -5,6 +5,12 @@
 <p class="meta">Le sedute registrate, giorno per giorno.</p>
 </div>
 
+{{if .Chips}}
+<div class="chips map-filters">
+<a class="chip{{if .TuttiOn}} on{{end}}" href="/diario">Tutti</a>
+{{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}</a>{{end}}
+</div>
+{{end}}
 {{if .PrepMap}}
 <section>
 <div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
@@ -25,6 +31,8 @@
 <span>da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in <a href="/pezzi">Pezzi</a></span>
 </div>
 </section>
+{{else if .Filtered}}
+<p class="empty">Nessun pezzo per i concorsi selezionati.</p>
 {{end}}
 
 <div class="stack">

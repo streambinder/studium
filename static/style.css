@@ -536,6 +536,35 @@ h2 {
   opacity: 0.6;
 }
 
+.map-filters {
+  margin: 0 0 0.85rem;
+  gap: 0.45rem;
+}
+
+a.chip {
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+a.chip:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.chip.on {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  color: #fdf6ec;
+}
+
+a.chip.on:hover {
+  color: #fdf6ec;
+  border-color: var(--accent-deep);
+}
+
 /* ---------- linked cards ---------- */
 
 a.card-link {

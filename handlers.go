@@ -925,7 +925,45 @@ type dayRow struct {
 	Pieces  int
 }
 
-func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
+// concorsoChip is one toggle chip above the preparation map.
+type concorsoChip struct {
+	ID       int64
+	Name     string
+	Archived bool
+	Selected bool
+	Href     string
+}
+
+// parseConcorsoFilter reads the ?c=1,2 map-filter selection.
+func parseConcorsoFilter(raw string) map[int64]bool {
+	sel := map[int64]bool{}
+	for _, part := range strings.Split(raw, ",") {
+		if id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64); err == nil && id > 0 {
+			sel[id] = true
+		}
+	}
+	return sel
+}
+
+// concorsoFilterHref renders a selection as its /diario URL; an empty
+// selection is the plain Tutti view.
+func concorsoFilterHref(sel map[int64]bool) string {
+	if len(sel) == 0 {
+		return "/diario"
+	}
+	ids := make([]int64, 0, len(sel))
+	for id := range sel {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(id, 10)
+	}
+	return "/diario?c=" + strings.Join(parts, ",")
+}
+
+func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0),
 		COUNT(DISTINCT CASE WHEN minutes > 0 OR confidence > 0 THEN piece_id END)
 		FROM sessions GROUP BY date ORDER BY date DESC`)
@@ -942,17 +980,46 @@ func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 		}
 		days = append(days, d)
 	}
-	prep, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	concorsi, err := a.listConcorsi(true)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	prepMobile, err := a.prepTiles(todayStr(), prepBiasMobile)
+	sel := parseConcorsoFilter(r.URL.Query().Get("c"))
+	valid := make(map[int64]bool, len(sel))
+	for _, c := range concorsi {
+		if sel[c.ID] {
+			valid[c.ID] = true
+		}
+	}
+	chips := make([]concorsoChip, 0, len(concorsi))
+	for _, c := range concorsi {
+		next := make(map[int64]bool, len(valid)+1)
+		for id := range valid {
+			next[id] = true
+		}
+		if next[c.ID] {
+			delete(next, c.ID)
+		} else {
+			next[c.ID] = true
+		}
+		chips = append(chips, concorsoChip{ID: c.ID, Name: c.Name, Archived: c.Archived, Selected: valid[c.ID], Href: concorsoFilterHref(next)})
+	}
+	var filter map[int64]bool
+	if len(valid) > 0 {
+		filter = valid
+	}
+	prep, err := a.prepTilesFor(todayStr(), prepBiasDesktop, filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile})
+	prepMobile, err := a.prepTilesFor(todayStr(), prepBiasMobile, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile, "Chips": chips, "TuttiOn": len(valid) == 0, "Filtered": len(valid) > 0})
 }
 
 type giornoPiece struct {

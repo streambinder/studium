@@ -1,0 +1,76 @@
+package main
+
+import (
+	"database/sql"
+	"testing"
+
+	_ "modernc.org/sqlite"
+)
+
+func TestParseConcorsoFilter(t *testing.T) {
+	sel := parseConcorsoFilter(" 2, x ,1,2,0,-3,")
+	if len(sel) != 2 || !sel[1] || !sel[2] {
+		t.Fatalf("want {1,2}, got %v", sel)
+	}
+	if got := len(parseConcorsoFilter("")); got != 0 {
+		t.Fatalf("empty param: want 0 selected, got %d", got)
+	}
+}
+
+func TestConcorsoFilterHref(t *testing.T) {
+	if got := concorsoFilterHref(map[int64]bool{}); got != "/diario" {
+		t.Fatalf("empty selection: got %q", got)
+	}
+	if got := concorsoFilterHref(map[int64]bool{3: true, 1: true}); got != "/diario?c=1,3" {
+		t.Fatalf("two selections sorted: got %q", got)
+	}
+}
+
+func TestPrepTilesForFiltersByConcorso(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	stmts := []string{
+		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
+		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(2, 'Napoli', '2026-12-14', 3)`,
+		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Bach', 'Suite')`,
+		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Haydn', 'Concerto')`,
+		`INSERT INTO pieces(id, composer, work) VALUES(3, 'Piatti', 'Capriccio')`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 2)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 2)`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	a := &App{db: db}
+	all, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 3 {
+		t.Fatalf("unfiltered: want 3 tiles, got %d", len(all))
+	}
+	roma, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roma) != 2 {
+		t.Fatalf("concorso 1: want 2 tiles, got %d", len(roma))
+	}
+	both, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true, 2: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(both) != 3 {
+		t.Fatalf("concorsi 1+2 (union): want 3 tiles, got %d", len(both))
+	}
+}

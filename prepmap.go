@@ -36,6 +36,16 @@ type prepSession struct {
 }
 
 // prepSessions returns all sessions for a piece, newest first.
+// pieceInConcorsi reports whether p is linked to any selected concorso.
+func pieceInConcorsi(p Piece, selected map[int64]bool) bool {
+	for _, c := range p.Concorsi {
+		if selected[c.ID] {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *App) prepSessions(pieceID int64) ([]prepSession, error) {
 	rows, err := a.db.Query(`SELECT date, minutes, confidence FROM sessions
 		WHERE piece_id=? ORDER BY date DESC, id DESC`, pieceID)
@@ -117,6 +127,12 @@ func prepScore(difficulty int, sessions []prepSession, today time.Time) (score f
 // prepTiles builds the treemap tiles for every active piece, laid out
 // with the given aspect bias.
 func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
+	return a.prepTilesFor(todayStr, bias, nil)
+}
+
+// prepTilesFor builds the preparation map tiles; when selected is
+// non-nil only pieces linked to at least one selected concorso appear.
+func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]bool) ([]prepTile, error) {
 	pieces, err := a.listPieces(0, "", false)
 	if err != nil {
 		return nil, err
@@ -127,6 +143,9 @@ func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
 	}
 	tiles := make([]prepTile, 0, len(pieces))
 	for _, p := range pieces {
+		if selected != nil && !pieceInConcorsi(p, selected) {
+			continue
+		}
 		sessions, err := a.prepSessions(p.ID)
 		if err != nil {
 			return nil, err
