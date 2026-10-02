@@ -29,7 +29,6 @@ type Piece struct {
 	Composer   string
 	Work       string
 	Movement   string
-	Excerpt    string
 	Kind       string // 'passo' | 'solo'
 	Difficulty int    // 1..5, user-calibrated; drives the prep-map tile size
 	Archived   bool
@@ -258,13 +257,13 @@ func collect[T any](rows *sql.Rows, scan func(*sql.Rows) (T, error)) ([]T, error
 func scanPieces(rows *sql.Rows) ([]Piece, error) {
 	return collect(rows, func(rows *sql.Rows) (Piece, error) {
 		var p Piece
-		err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Difficulty, &p.Archived)
+		err := rows.Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Kind, &p.Difficulty, &p.Archived)
 		return p, err
 	})
 }
 
 func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([]Piece, error) {
-	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.excerpt, p.kind, p.difficulty,
+	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.kind, p.difficulty,
 		p.archived_at IS NOT NULL FROM pieces p`
 	args := []any{}
 	where := ""
@@ -308,8 +307,8 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 
 func (a *App) getPiece(id int64) (Piece, error) {
 	var p Piece
-	err := a.db.QueryRow(`SELECT id, composer, work, movement, excerpt, kind, difficulty, archived_at IS NOT NULL
-		FROM pieces WHERE id=?`, id).Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Excerpt, &p.Kind, &p.Difficulty, &p.Archived)
+	err := a.db.QueryRow(`SELECT id, composer, work, movement, kind, difficulty, archived_at IS NOT NULL
+		FROM pieces WHERE id=?`, id).Scan(&p.ID, &p.Composer, &p.Work, &p.Movement, &p.Kind, &p.Difficulty, &p.Archived)
 	if err != nil {
 		return p, err
 	}

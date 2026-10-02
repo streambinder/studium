@@ -30,7 +30,6 @@
 {{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
-{{if .Excerpt}}<div class="meta excerpt">{{.Excerpt}}</div>{{end}}
 <div class="meta concorsi">
 {{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{if $c.Notes}} <span class="meta">({{$c.Notes}})</span>{{end}}{{end}}
 </div>
@@ -65,7 +64,6 @@
 <option value="solo">solistico</option>
 </select></label>
 </div>
-<label>Estratto / battute <input type="text" name="excerpt" placeholder="es. inizio–b.123"></label>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 <fieldset><legend>Concorsi</legend>
 {{range .Concorsi}}<div class="link-note"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="nota-{{.ID}}" placeholder="nota per questo concorso"></div>{{end}}

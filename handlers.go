@@ -535,8 +535,8 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "compositore e opera sono obbligatori", http.StatusBadRequest)
 		return
 	}
-	res, err := a.db.Exec(`INSERT INTO pieces(composer, work, movement, excerpt, kind, difficulty)
-		VALUES(?,?,?,?,?,?)`, composer, work, r.FormValue("movement"), r.FormValue("excerpt"), kind, clampDifficulty(r))
+	res, err := a.db.Exec(`INSERT INTO pieces(composer, work, movement, kind, difficulty)
+		VALUES(?,?,?,?,?)`, composer, work, r.FormValue("movement"), kind, clampDifficulty(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -613,9 +613,9 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 	if kind != kindSolo {
 		kind = kindPasso
 	}
-	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, excerpt=?, kind=?, difficulty=?
+	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, kind=?, difficulty=?
 		WHERE id=?`, r.FormValue("composer"), r.FormValue("work"),
-		r.FormValue("movement"), r.FormValue("excerpt"), kind, clampDifficulty(r), id)
+		r.FormValue("movement"), kind, clampDifficulty(r), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
