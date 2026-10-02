@@ -1278,7 +1278,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: #fffdf8;
+  color: var(--ink);
   overflow: hidden;
   transition:
     filter 0.18s ease,
@@ -1287,6 +1287,7 @@ a:hover {
 }
 
 .ptile:hover {
+  color: var(--ink);
   filter: brightness(1.08);
   transform: scale(1.02);
   z-index: 2;
@@ -1355,12 +1356,6 @@ a:hover {
 .lv4 {
   background-color: #4c6b43;
 }
-.lv0 span,
-.lv1 span,
-.lv2 span {
-  color: #57503f;
-}
-
 .preplegend {
   display: flex;
   align-items: center;
