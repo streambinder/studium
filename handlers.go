@@ -811,12 +811,17 @@ func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 		}
 		days = append(days, d)
 	}
-	prep, err := a.prepTiles(todayStr())
+	prep, err := a.prepTiles(todayStr(), prepBiasDesktop)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep})
+	prepMobile, err := a.prepTiles(todayStr(), prepBiasMobile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile})
 }
 
 type pezzoDetailData struct {

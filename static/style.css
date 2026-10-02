@@ -1187,6 +1187,10 @@ a:hover {
   overflow: hidden;
 }
 
+.prepmap.mob {
+  display: none;
+}
+
 .ptiles {
   position: absolute;
   inset: 3px;
@@ -1304,7 +1308,12 @@ a:hover {
 }
 
 @media (max-width: 640px) {
-  .prepmap {
+  .prepmap.desk {
+    display: none;
+  }
+
+  .prepmap.mob {
+    display: block;
     aspect-ratio: 4 / 5;
     padding: 3px;
   }

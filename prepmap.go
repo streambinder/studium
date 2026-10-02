@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
 )
 
 // Prep map: a GitHub-style contribution graph for the homepage.
-// Each tile is a piece to prepare. Tile area is proportional to the
-// piece's user-calibrated difficulty (1..5); tile color (level 0..4)
+// Each tile is a piece to prepare. Tile area grows with the piece's
+// user-calibrated difficulty (1..5), raised to 1.5 so the size gap
+// between easy and hard pieces reads clearly; tile color (level 0..4)
 // is the preparation state, driven mostly by the user's own confidence
 // feedback, then by study time and recency.
 type prepTile struct {
@@ -112,8 +114,9 @@ func prepScore(difficulty int, sessions []prepSession, today time.Time) (score f
 	return score, level, avgConf, rated
 }
 
-// prepTiles builds the treemap tiles for every active piece.
-func (a *App) prepTiles(todayStr string) ([]prepTile, error) {
+// prepTiles builds the treemap tiles for every active piece, laid out
+// with the given aspect bias.
+func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
 	pieces, err := a.listPieces(0, "", false)
 	if err != nil {
 		return nil, err
@@ -162,7 +165,7 @@ func (a *App) prepTiles(todayStr string) ([]prepTile, error) {
 		}
 		return tiles[i].PieceID < tiles[j].PieceID
 	})
-	layoutTreemap(tiles, 0, 0, 100, 100, true)
+	layoutTreemap(tiles, 0, 0, 100, 100, bias)
 	markCorners(tiles)
 	return tiles, nil
 }
@@ -188,14 +191,30 @@ func markCorners(tiles []prepTile) {
 	}
 }
 
-// layoutTreemap assigns rects with slice-and-dice: alternating splits
-// proportional to difficulty, so the map always fills its fixed box.
-func layoutTreemap(tiles []prepTile, x, y, w, h float64, horizontal bool) {
+// Aspect biases for the two map layouts. The layout runs in a virtual
+// box whose width is stretched by the bias and is mapped back to
+// percent, so tiles come out wider than tall and labels stay readable.
+// The desktop box is wide (16/8) and the phone box is portrait (4/5),
+// so each gets a bias tuned to its physical proportions.
+const (
+	prepBiasDesktop = 1.6
+	prepBiasMobile  = 0.7
+)
+
+// layoutTreemap fills the box with binary splits along the longer side
+// of each rect. Weights grow with difficulty^1.5, which exaggerates the
+// area difference between easy and hard pieces beyond the linear scale.
+func layoutTreemap(tiles []prepTile, x, y, w, h, bias float64) {
+	layoutVirtual(tiles, x*bias, y, w*bias, h, bias)
+}
+
+func layoutVirtual(tiles []prepTile, x, y, w, h, bias float64) {
 	if len(tiles) == 0 {
 		return
 	}
 	if len(tiles) == 1 {
-		tiles[0].X, tiles[0].Y, tiles[0].W, tiles[0].H = x, y, w, h
+		tiles[0].X, tiles[0].Y = x/bias, y
+		tiles[0].W, tiles[0].H = w/bias, h
 		return
 	}
 	weights := make([]float64, len(tiles))
@@ -205,7 +224,7 @@ func layoutTreemap(tiles []prepTile, x, y, w, h float64, horizontal bool) {
 		if d < 1 {
 			d = 1
 		}
-		weights[i] = float64(d)
+		weights[i] = math.Pow(float64(d), 1.5)
 		total += weights[i]
 	}
 	// Split where the cumulative weight crosses half.
@@ -220,14 +239,16 @@ func layoutTreemap(tiles []prepTile, x, y, w, h float64, horizontal bool) {
 	for i := 0; i < split; i++ {
 		left += weights[i]
 	}
-	if horizontal {
+	// Cut wide rects side by side and tall rects one over the other, so
+	// no tile degenerates into a thin strip.
+	if w >= h {
 		w1 := w * left / total
-		layoutTreemap(tiles[:split], x, y, w1, h, false)
-		layoutTreemap(tiles[split:], x+w1, y, w-w1, h, false)
+		layoutVirtual(tiles[:split], x, y, w1, h, bias)
+		layoutVirtual(tiles[split:], x+w1, y, w-w1, h, bias)
 	} else {
 		h1 := h * left / total
-		layoutTreemap(tiles[:split], x, y, w, h1, true)
-		layoutTreemap(tiles[split:], x, y+h1, w, h-h1, true)
+		layoutVirtual(tiles[:split], x, y, w, h1, bias)
+		layoutVirtual(tiles[split:], x, y+h1, w, h-h1, bias)
 	}
 }
 

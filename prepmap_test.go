@@ -80,7 +80,7 @@ func TestTreemapFillsBox(t *testing.T) {
 	tiles := []prepTile{
 		{Difficulty: 5}, {Difficulty: 3}, {Difficulty: 4}, {Difficulty: 1}, {Difficulty: 2},
 	}
-	layoutTreemap(tiles, 0, 0, 100, 100, true)
+	layoutTreemap(tiles, 0, 0, 100, 100, prepBiasDesktop)
 	area := 0.0
 	for _, tl := range tiles {
 		if tl.W <= 0 || tl.H <= 0 {
@@ -102,12 +102,16 @@ func TestTreemapFillsBox(t *testing.T) {
 	if !(areas[5] > areas[4] && areas[4] > areas[3] && areas[3] > areas[2] && areas[2] > areas[1]) {
 		t.Fatalf("area should grow with difficulty: %v", areas)
 	}
+	// Weights grow faster than linear so size differences read clearly.
+	if areas[5] < 8*areas[1] {
+		t.Fatalf("hardest piece should dwarf the easiest: %v", areas)
+	}
 }
 
 func TestTreemapSingleAndEmpty(t *testing.T) {
-	layoutTreemap(nil, 0, 0, 100, 100, true) // must not panic
+	layoutTreemap(nil, 0, 0, 100, 100, prepBiasDesktop) // must not panic
 	one := []prepTile{{Difficulty: 3}}
-	layoutTreemap(one, 0, 0, 100, 100, false)
+	layoutTreemap(one, 0, 0, 100, 100, prepBiasDesktop)
 	if one[0].X != 0 || one[0].Y != 0 || one[0].W != 100 || one[0].H != 100 {
 		t.Fatalf("single tile should fill the box: %+v", one[0])
 	}
