@@ -408,8 +408,30 @@ h2 {
   margin-top: 0.3rem;
 }
 
-.meta.concorsi {
-  margin-top: 0.35rem;
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.16rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(33, 28, 21, 0.05);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
+
+.chip.muted {
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .muted {

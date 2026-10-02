@@ -30,9 +30,9 @@
 {{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
-<div class="meta concorsi">
-{{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{if $c.Estratto}} <span class="meta">({{$c.Estratto}})</span>{{end}}{{end}}
-</div>
+{{if .Concorsi}}<div class="chips">
+{{range $c := .Concorsi}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}</span>{{if $c.Estratto}}<span class="meta">({{$c.Estratto}})</span>{{end}}{{end}}
+</div>{{end}}
 <div class="diff-row"><label>Difficoltà <input type="range" class="diff-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Difficulty}}"> <output>{{.Difficulty}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 <div class="row btns">
 <a class="btn" href="/diario/pezzo/{{.ID}}">Diario</a>
