@@ -570,8 +570,14 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dati seduta non validi", http.StatusBadRequest)
 		return
 	}
-	_, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
-		VALUES(?,?,?,?,?)`, todayStr(), pieceID, minutes, conf, r.FormValue("note"))
+	var tempo any
+	if raw := strings.TrimSpace(r.FormValue("tempo")); raw != "" {
+		if bpm, err := strconv.Atoi(raw); err == nil && bpm > 0 && bpm <= 400 {
+			tempo = bpm
+		}
+	}
+	_, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note, tempo)
+		VALUES(?,?,?,?,?,?)`, todayStr(), pieceID, minutes, conf, r.FormValue("note"), tempo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -973,7 +979,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note,
+	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note, s.tempo,
 		p.id, p.composer, p.work, p.movement
 		FROM sessions s JOIN pieces p ON p.id = s.piece_id
 		WHERE s.date = ? ORDER BY p.composer, p.work, s.id`, date)
@@ -988,7 +994,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		var s Session
 		var pid int64
 		var composer, work, movement string
-		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note,
+		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.Tempo,
 			&pid, &composer, &work, &movement); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -1057,7 +1063,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, ok := a.queryRows(w, `SELECT id, date, piece_id, minutes, confidence, note FROM sessions
+	rows, ok := a.queryRows(w, `SELECT id, date, piece_id, minutes, confidence, note, tempo FROM sessions
 		WHERE piece_id=? ORDER BY date DESC, id DESC`, p.ID)
 	if !ok {
 		return
@@ -1067,7 +1073,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 	var confs []int // oldest -> newest for the sparkline
 	for rows.Next() {
 		var s Session
-		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note); err != nil {
+		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.Tempo); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

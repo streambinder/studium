@@ -43,6 +43,7 @@ type Session struct {
 	Minutes    int
 	Confidence int
 	Note       string
+	Tempo      sql.NullInt64 // optional metronome mark (BPM); NULL when unrecorded
 }
 
 type Availability struct {
@@ -146,6 +147,14 @@ func migrate(db *sql.DB) error {
 	// column started out as notes and is renamed when present.
 	if err := ensureLinkEstratto(db); err != nil {
 		return err
+	}
+	// sessions.tempo holds the optional metronome mark (BPM) of a practice
+	// session; NULL when the player did not record one.
+	if _, err := db.Exec(`ALTER TABLE sessions ADD COLUMN tempo INTEGER`); err != nil {
+		// duplicate column means the migration already ran; anything else is real.
+		if !isDupColumnErr(err) {
+			return fmt.Errorf("migrate tempo: %w", err)
+		}
 	}
 	return nil
 }
