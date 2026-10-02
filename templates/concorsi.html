@@ -12,7 +12,7 @@
 <div class="card-head">
 {{if .Archived}}<span class="badge muted">archiviato</span>
 {{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
-<span class="meta">{{.Pieces}} pezzi collegati</span>
+<span class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</span>
 </div>
 <div class="row">
 <label>Nome <input type="text" name="name" value="{{.Name}}" required {{if .Archived}}disabled{{end}}></label>
@@ -23,6 +23,7 @@
 </div>
 </form>
 <div class="row btns">
+<a class="btn secondary" href="/concorsi/{{.ID}}">Dettaglio</a>
 {{if not .Archived}}<button type="submit" form="concorso-{{.ID}}">Salva</button>{{end}}
 {{if .Archived}}
 <form method="post" action="/concorsi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
@@ -44,8 +45,20 @@
 <label>Data prova <input type="date" name="date" required></label>
 <label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 </div>
+<div class="row">
+<label>Link risorsa <input type="url" name="link_url" placeholder="https://… (bando, PDF passi)"></label>
+<label>Etichetta <input type="text" name="link_label" placeholder="es. Bando"></label>
+</div>
+<div class="row">
+<label>Altro link <input type="url" name="link_url" placeholder="https://…"></label>
+<label>Etichetta <input type="text" name="link_label" placeholder="es. Parti orchestrali"></label>
+</div>
+<div class="row">
+<label>Altro link <input type="url" name="link_url" placeholder="https://…"></label>
+<label>Etichetta <input type="text" name="link_label" placeholder=""></label>
+</div>
 <button type="submit">Aggiungi</button>
 </form>
-<p class="meta">I pezzi si collegano al concorso dalla pagina <a href="/pezzi">Pezzi</a> (modifica).</p>
+<p class="meta">I link sono facoltativi: dal dettaglio del concorso potrai aggiungerne o rimuoverne altri in qualsiasi momento. I pezzi si collegano dalla pagina <a href="/pezzi">Pezzi</a> (modifica).</p>
 </section>
 {{end}}

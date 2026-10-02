@@ -99,6 +99,12 @@ func migrate(db *sql.DB) error {
 			concorso_id INTEGER NOT NULL REFERENCES concorsi(id) ON DELETE CASCADE,
 			PRIMARY KEY(piece_id, concorso_id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS concorso_links(
+			id INTEGER PRIMARY KEY,
+			concorso_id INTEGER NOT NULL REFERENCES concorsi(id) ON DELETE CASCADE,
+			label TEXT NOT NULL DEFAULT '',
+			url TEXT NOT NULL
+		)`,
 		`CREATE TABLE IF NOT EXISTS sessions(
 			id INTEGER PRIMARY KEY,
 			date TEXT NOT NULL,
@@ -270,6 +276,39 @@ func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
 		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Estratto)
 		return c, err
 	})
+}
+
+// ConcorsoLink is one external resource attached to a concorso (official
+// notice, orchestral parts PDF, ...).
+type ConcorsoLink struct {
+	ID         int64
+	ConcorsoID int64
+	Label      string
+	URL        string
+}
+
+func (a *App) concorsoLinks(concorsoID int64) ([]ConcorsoLink, error) {
+	rows, err := a.db.Query(`SELECT id, concorso_id, label, url FROM concorso_links
+		WHERE concorso_id=? ORDER BY id`, concorsoID)
+	if err != nil {
+		return nil, err
+	}
+	return collect(rows, func(rows *sql.Rows) (ConcorsoLink, error) {
+		var l ConcorsoLink
+		err := rows.Scan(&l.ID, &l.ConcorsoID, &l.Label, &l.URL)
+		return l, err
+	})
+}
+
+func (a *App) addConcorsoLink(concorsoID int64, label, url string) error {
+	_, err := a.db.Exec(`INSERT INTO concorso_links(concorso_id, label, url) VALUES(?,?,?)`,
+		concorsoID, label, url)
+	return err
+}
+
+func (a *App) deleteConcorsoLink(concorsoID, linkID int64) error {
+	_, err := a.db.Exec(`DELETE FROM concorso_links WHERE id=? AND concorso_id=?`, linkID, concorsoID)
+	return err
 }
 
 // closeRows checks rows.Err, closes rows (logging close failures) and

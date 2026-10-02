@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -31,7 +32,10 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /pezzi/{id}/ripristina", a.handleRestorePiece)
 	mux.HandleFunc("GET /concorsi", a.handleConcorsi)
 	mux.HandleFunc("POST /concorsi", a.handleAddConcorso)
+	mux.HandleFunc("GET /concorsi/{id}", a.handleConcorsoDetail)
 	mux.HandleFunc("POST /concorsi/{id}", a.handleUpdateConcorso)
+	mux.HandleFunc("POST /concorsi/{id}/link", a.handleAddConcorsoLink)
+	mux.HandleFunc("POST /concorsi/{id}/link/{linkID}/elimina", a.handleDeleteConcorsoLink)
 	mux.HandleFunc("POST /concorsi/{id}/archivia", a.handleArchiveConcorso)
 	mux.HandleFunc("POST /concorsi/{id}/ripristina", a.handleRestoreConcorso)
 	mux.HandleFunc("GET /diario", a.handleDiario)
@@ -827,6 +831,7 @@ type concorsoRow struct {
 	Concorso
 	Concluded bool
 	Pieces    int
+	Links     int
 }
 
 type concorsiData struct {
@@ -845,8 +850,12 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 	}
 	var rows []concorsoRow
 	for _, c := range cs {
-		var n int
+		var n, nl int
 		if err := a.db.QueryRow(`SELECT COUNT(*) FROM piece_concorso WHERE concorso_id=?`, c.ID).Scan(&n); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := a.db.QueryRow(`SELECT COUNT(*) FROM concorso_links WHERE concorso_id=?`, c.ID).Scan(&nl); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -854,6 +863,7 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 			Concorso:  c,
 			Concluded: !c.Archived && c.Date < today,
 			Pieces:    n,
+			Links:     nl,
 		})
 	}
 	a.render(w, "concorsi.html", concorsiData{Title: "Concorsi", Nav: "concorsi", Rows: rows, Today: today})
@@ -878,6 +888,10 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	links, lok := formResourceLinks(w, r)
+	if !lok {
+		return
+	}
 	res, err := a.db.Exec(`INSERT INTO concorsi(name, audition_date, weight)
 		VALUES(?,?,?)`, name, date, validWeight(formInt(r, "weight", 1)))
 	if err != nil {
@@ -886,6 +900,12 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 	}
 	if id, ierr := res.LastInsertId(); ierr == nil {
 		log.Printf("event concorso created id=%d date=%s", id, date)
+		for _, l := range links {
+			if err := a.addConcorsoLink(id, l.Label, l.URL); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
 }
@@ -906,7 +926,11 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("event concorso updated id=%d date=%s", id, date)
-	http.Redirect(w, r, "/concorsi", http.StatusSeeOther)
+	redirect := "/concorsi"
+	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/concorsi/") {
+		redirect = back
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
 func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
@@ -915,6 +939,139 @@ func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) handleRestoreConcorso(w http.ResponseWriter, r *http.Request) {
 	a.setArchived(w, r, `UPDATE concorsi SET archived_at=NULL WHERE id=?`, "/concorsi", "concorso restored")
+}
+
+func (a *App) concorsoOr404(w http.ResponseWriter, r *http.Request) (Concorso, bool) {
+	id, ok := pathID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return Concorso{}, false
+	}
+	var c Concorso
+	err := a.db.QueryRow(`SELECT id, name, audition_date, weight, archived_at IS NOT NULL
+		FROM concorsi WHERE id=?`, id).Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived)
+	if err != nil {
+		http.NotFound(w, r)
+		return Concorso{}, false
+	}
+	return c, true
+}
+
+// validResourceURL accepts only absolute http(s) URLs with a host.
+func validResourceURL(raw string) bool {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	return err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https")
+}
+
+// resourceLabel defaults an empty link label to the URL host.
+func resourceLabel(raw, label string) string {
+	if l := strings.TrimSpace(label); l != "" {
+		return l
+	}
+	if u, err := url.Parse(strings.TrimSpace(raw)); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return "Link"
+}
+
+// formResourceLinks collects the (label, url) pairs submitted by a form:
+// empty URLs are skipped, invalid ones abort with a 400 already written.
+func formResourceLinks(w http.ResponseWriter, r *http.Request) ([]ConcorsoLink, bool) {
+	urls := r.Form["link_url"]
+	labels := r.Form["link_label"]
+	var out []ConcorsoLink
+	for i, raw := range urls {
+		u := strings.TrimSpace(raw)
+		if u == "" {
+			continue
+		}
+		if !validResourceURL(u) {
+			http.Error(w, "link risorsa non valido: serve un URL http(s) completo", http.StatusBadRequest)
+			return nil, false
+		}
+		label := ""
+		if i < len(labels) {
+			label = labels[i]
+		}
+		out = append(out, ConcorsoLink{Label: resourceLabel(u, label), URL: u})
+	}
+	return out, true
+}
+
+type concorsoDetailData struct {
+	Title     string
+	Nav       string
+	Concorso  Concorso
+	Concluded bool
+	Links     []ConcorsoLink
+	Pieces    []Piece
+}
+
+func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
+	c, ok := a.concorsoOr404(w, r)
+	if !ok {
+		return
+	}
+	links, err := a.concorsoLinks(c.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	pieces, err := a.listPieces(c.ID, "", false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "concorso_detail.html", concorsoDetailData{
+		Title: c.Name, Nav: "concorsi", Concorso: c,
+		Concluded: !c.Archived && c.Date < todayStr(),
+		Links:     links, Pieces: pieces,
+	})
+}
+
+func (a *App) handleAddConcorsoLink(w http.ResponseWriter, r *http.Request) {
+	c, ok := a.concorsoOr404(w, r)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	links, lok := formResourceLinks(w, r)
+	if !lok {
+		return
+	}
+	if len(links) == 0 {
+		http.Error(w, "link risorsa mancante", http.StatusBadRequest)
+		return
+	}
+	for _, l := range links {
+		if err := a.addConcorsoLink(c.ID, l.Label, l.URL); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	log.Printf("event concorso link added concorso=%d", c.ID)
+	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10), http.StatusSeeOther)
+}
+
+func (a *App) handleDeleteConcorsoLink(w http.ResponseWriter, r *http.Request) {
+	c, ok := a.concorsoOr404(w, r)
+	if !ok {
+		return
+	}
+	linkID, err := strconv.ParseInt(r.PathValue("linkID"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	if err := a.deleteConcorsoLink(c.ID, linkID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("event concorso link removed concorso=%d link=%d", c.ID, linkID)
+	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10), http.StatusSeeOther)
 }
 
 // ---------- diario ----------
