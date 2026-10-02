@@ -31,7 +31,7 @@
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
 <div class="meta concorsi">
-{{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{if $c.Notes}} <span class="meta">({{$c.Notes}})</span>{{end}}{{end}}
+{{range $i, $c := .Concorsi}}{{if $i}}, {{end}}<span class="{{if $c.Archived}}muted{{end}}">{{$c.Name}}</span>{{if $c.Estratto}} <span class="meta">({{$c.Estratto}})</span>{{end}}{{end}}
 </div>
 <div class="diff-row"><label>Difficoltà <input type="range" class="diff-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Difficulty}}"> <output>{{.Difficulty}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 <div class="row btns">
@@ -66,7 +66,7 @@
 </div>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 <fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-note"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="nota-{{.ID}}" placeholder="nota per questo concorso"></div>{{end}}
+{{range .Concorsi}}<div class="link-estratto"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="estratto-{{.ID}}" placeholder="estratto per questo concorso"></div>{{end}}
 </fieldset>
 <button type="submit">Aggiungi</button>
 </form>

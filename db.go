@@ -15,7 +15,7 @@ type Concorso struct {
 	Date     string // YYYY-MM-DD
 	Weight   int
 	Archived bool
-	Notes    string // per-link notes, set only when read through piece_concorso
+	Estratto string // per-link excerpt, set only when read through piece_concorso
 }
 
 // Piece kinds.
@@ -142,14 +142,58 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate difficulty: %w", err)
 		}
 	}
-	// piece_concorso.notes keeps per-link notes on the linking entity.
-	if _, err := db.Exec(`ALTER TABLE piece_concorso ADD COLUMN notes TEXT NOT NULL DEFAULT ''`); err != nil {
-		// duplicate column means the migration already ran; anything else is real.
-		if !isDupColumnErr(err) {
-			return fmt.Errorf("migrate piece_concorso notes: %w", err)
+	// piece_concorso.estratto holds the excerpt each concorso asks for; the
+	// column started out as notes and is renamed when present.
+	if err := ensureLinkEstratto(db); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ensureLinkEstratto renames the original notes column to estratto, or adds
+// estratto on installs that never had notes.
+func ensureLinkEstratto(db *sql.DB) error {
+	cols, err := tableColumns(db, "piece_concorso")
+	if err != nil {
+		return fmt.Errorf("migrate piece_concorso estratto: %w", err)
+	}
+	switch {
+	case cols["estratto"]:
+		return nil
+	case cols["notes"]:
+		if _, err := db.Exec(`ALTER TABLE piece_concorso RENAME COLUMN notes TO estratto`); err != nil {
+			return fmt.Errorf("migrate piece_concorso estratto: %w", err)
+		}
+	default:
+		if _, err := db.Exec(`ALTER TABLE piece_concorso ADD COLUMN estratto TEXT NOT NULL DEFAULT ''`); err != nil {
+			return fmt.Errorf("migrate piece_concorso estratto: %w", err)
 		}
 	}
 	return nil
+}
+
+// tableColumns returns the column names of a table.
+func tableColumns(db *sql.DB, table string) (map[string]bool, error) {
+	rows, err := db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("rows close: %v", cerr)
+		}
+	}()
+	cols := map[string]bool{}
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, typ string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
+			return nil, err
+		}
+		cols[name] = true
+	}
+	return cols, rows.Err()
 }
 
 func isDupColumnErr(err error) bool {
@@ -206,7 +250,7 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 }
 
 func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
-	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.notes
+	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.estratto
 		FROM concorsi c JOIN piece_concorso pc ON pc.concorso_id=c.id
 		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
 	if err != nil {
@@ -214,7 +258,7 @@ func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
 	}
 	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
 		var c Concorso
-		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Notes)
+		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Estratto)
 		return c, err
 	})
 }

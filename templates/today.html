@@ -49,7 +49,7 @@
 {{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
 </div>
 {{if .Piece.Movement}}<div class="meta">{{.Piece.Movement}}</div>{{end}}
-{{if .Upcoming}}{{with index .Upcoming 0}}{{if .Notes}}<div class="meta excerpt">{{.Notes}}</div>{{end}}{{end}}{{end}}
+{{if .Upcoming}}{{with index .Upcoming 0}}{{if .Estratto}}<div class="meta excerpt">{{.Estratto}}</div>{{end}}{{end}}{{end}}
 <div class="slot">{{if ge .StartMin 0}}{{hhmm .StartMin}}–{{hhmm .EndMin}} · {{end}}{{.Minutes}} min suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
 <div class="details-body">
