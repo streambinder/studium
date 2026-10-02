@@ -435,6 +435,11 @@ h2 {
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
+  white-space: nowrap;
+}
+
+.done-card .card-head {
+  padding-right: 8rem;
 }
 
 .day-link {
