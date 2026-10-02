@@ -184,8 +184,9 @@ type todayData struct {
 	Free            []Availability
 	Busy            []Availability
 	Budget          int
-	Planned         int // sum of item minutes, for the budget bar
-	BudgetPct       int // Planned as a percentage of Budget
+	Logged          int // minutes recorded in today's diary
+	LoggedPct       int // Logged as a percentage of Budget
+	BudgetPct       int // LoggedPct capped at 100, for the bar width
 	NoBudget        bool
 	Items           []planItem
 	Pieces          []Piece // all active pieces, for the manual session form
@@ -424,16 +425,21 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			items[i].EndMin = cursor
 		}
 		data.Items = items
-		planned := 0
-		for _, it := range items {
-			planned += it.Minutes
-		}
-		data.Planned = planned
-		if data.Budget > 0 {
-			data.BudgetPct = planned * 100 / data.Budget
-		}
 	} else if data.HasAvailability {
 		data.NoBudget = true
+	}
+	var logged int
+	if err := a.db.QueryRow(`SELECT COALESCE(SUM(minutes), 0) FROM sessions WHERE date=?`, today).Scan(&logged); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data.Logged = logged
+	if data.Budget > 0 {
+		data.LoggedPct = logged * 100 / data.Budget
+		data.BudgetPct = data.LoggedPct
+		if data.BudgetPct > 100 {
+			data.BudgetPct = 100
+		}
 	}
 	pieces, err := a.listPieces(0, "", false)
 	if err != nil {

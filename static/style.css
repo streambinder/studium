@@ -302,6 +302,14 @@ h2 {
   width: var(--w, 100%);
 }
 
+.hero-bar-note {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 /* ---------- readiness per concorso ---------- */
 
 .ready-row {

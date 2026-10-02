@@ -17,9 +17,10 @@
 <div class="hero-stats">
 <div class="hero-stat"><span class="num" data-count="{{.Budget}}">{{.Budget}}</span><span class="lbl">minuti di budget</span></div>
 <div class="hero-stat"><span class="num" data-count="{{len .Items}}">{{len .Items}}</span><span class="lbl">pezzi in piano</span></div>
-<div class="hero-stat"><span class="num" data-count="{{.Planned}}">{{.Planned}}</span><span class="lbl">minuti pianificati</span></div>
+<div class="hero-stat"><span class="num" data-count="{{.Logged}}">{{.Logged}}</span><span class="lbl">minuti registrati oggi</span></div>
 </div>
-<div class="budget-bar" role="img" aria-label="{{.Planned}} minuti pianificati su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
+<div class="budget-bar" role="img" aria-label="{{.Logged}} minuti registrati oggi su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
+<p class="hero-bar-note">{{.LoggedPct}}% del budget di oggi già in diario</p>
 </section>
 
 {{template "readiness" .}}
@@ -39,6 +40,11 @@
 <details><summary>Registra una sessione a mano</summary>
 <div class="details-body">
 <form method="post" action="/sessione" class="checkin">
+<div class="timer" data-manual="1" data-day="{{$.Date}}">
+<span class="timer-display">0:00</span>
+<button type="button" class="secondary timer-toggle">Avvia timer</button>
+<button type="button" class="secondary timer-done" hidden>Usa questi minuti</button>
+</div>
 <div class="row">
 <label>Pezzo <select name="piece_id" required>
 <option value="">— scegli —</option>
@@ -118,16 +124,26 @@
     return m + ':' + (r < 10 ? '0' : '') + r;
   }
   document.querySelectorAll('.timer').forEach(function(el) {
-    var key = 'studium-timer-' + el.dataset.day + '-' + el.dataset.piece;
     var display = el.querySelector('.timer-display');
     var toggle = el.querySelector('.timer-toggle');
     var done = el.querySelector('.timer-done');
+    var form = el.closest('form');
+    var select = el.dataset.manual ? form.querySelector('select[name="piece_id"]') : null;
+    function pieceId() { return select ? select.value : el.dataset.piece; }
+    var key = null;
     var state = { acc: 0, since: 0 };
-    try {
-      var saved = JSON.parse(localStorage.getItem(key) || 'null');
-      if (saved && typeof saved.acc === 'number') state = saved;
-    } catch (e) {}
+    function load() {
+      var p = pieceId();
+      key = p ? 'studium-timer-' + el.dataset.day + '-' + p : null;
+      state = { acc: 0, since: 0 };
+      if (!key) return;
+      try {
+        var saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (saved && typeof saved.acc === 'number') state = saved;
+      } catch (e) {}
+    }
     function save() {
+      if (!key) return;
       try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
     }
     function elapsed() {
@@ -137,10 +153,12 @@
       var ms = elapsed();
       display.textContent = fmt(ms);
       toggle.textContent = state.since ? 'Pausa' : (state.acc > 0 ? 'Riprendi' : 'Avvia timer');
+      toggle.disabled = !pieceId();
       done.hidden = ms < 1000;
       display.classList.toggle('running', !!state.since);
     }
     toggle.addEventListener('click', function() {
+      if (!pieceId()) return;
       if (state.since) {
         state.acc = elapsed();
         state.since = 0;
@@ -153,12 +171,14 @@
     done.addEventListener('click', function() {
       var mins = Math.round(elapsed() / 60000);
       if (mins < 1) mins = 1;
-      var input = el.closest('form').querySelector('input[name="minutes"]');
+      var input = form.querySelector('input[name="minutes"]');
       if (input) input.value = mins;
       state = { acc: 0, since: 0 };
-      try { localStorage.removeItem(key); } catch (e) {}
+      if (key) { try { localStorage.removeItem(key); } catch (e) {} }
       paint();
     });
+    if (select) select.addEventListener('change', function() { load(); paint(); });
+    load();
     paint();
     timers.push(paint);
   });
