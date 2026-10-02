@@ -920,7 +920,8 @@ type dayRow struct {
 }
 
 func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
-	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0), COUNT(DISTINCT piece_id)
+	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0),
+		COUNT(DISTINCT CASE WHEN minutes > 0 OR confidence > 0 THEN piece_id END)
 		FROM sessions GROUP BY date ORDER BY date DESC`)
 	if !ok {
 		return
@@ -957,11 +958,12 @@ type giornoPiece struct {
 }
 
 type giornoData struct {
-	Title   string
-	Nav     string
-	Date    string
-	Minutes int
-	Entries []giornoPiece
+	Title     string
+	Nav       string
+	Date      string
+	Minutes   int
+	Practiced int // pieces with a real session that day (skips excluded)
+	Entries   []giornoPiece
 }
 
 // handleDiarioGiorno shows one day with every piece that concerns it.
@@ -981,6 +983,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 	defer closeRowsLogged(rows)
 	data := giornoData{Title: "Diario", Nav: "diario", Date: date}
 	byKey := map[int64]int{}
+	counted := map[int64]bool{}
 	for rows.Next() {
 		var s Session
 		var pid int64
@@ -996,6 +999,10 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement})
 			idx = len(data.Entries) - 1
 			byKey[s.PieceID] = idx
+		}
+		if (s.Minutes > 0 || s.Confidence > 0) && !counted[s.PieceID] {
+			counted[s.PieceID] = true
+			data.Practiced++
 		}
 		data.Entries[idx].Sessions = append(data.Entries[idx].Sessions, s)
 		data.Entries[idx].Minutes += s.Minutes

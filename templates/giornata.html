@@ -2,7 +2,7 @@
 <div class="page-head">
 <span class="overline">Diario</span>
 <h1>{{dateIT .Date}}</h1>
-<p class="meta">{{.Minutes}} min registrati · {{len .Entries}} pezz{{if eq (len .Entries) 1}}o{{else}}i{{end}}</p>
+<p class="meta">{{.Minutes}} min registrati · {{.Practiced}} pezz{{if eq .Practiced 1}}o{{else}}i{{end}}</p>
 </div>
 
 <div class="stack">
