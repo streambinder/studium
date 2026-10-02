@@ -659,8 +659,9 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 
 // setArchived runs an archive/restore UPDATE for one row and redirects.
 // The query is a static string chosen by the caller; what labels the event
-// in the log. If the form carries a "ritorna" value pointing at /pezzi, it
-// is used as the redirect so the list keeps the user's view and filters.
+// in the log. If the form carries a "ritorna" value pointing at /pezzi or
+// at the piece detail page, it is used as the redirect so the user lands
+// back where they were.
 func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect, what string) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -671,7 +672,7 @@ func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirec
 		http.NotFound(w, r)
 		return
 	}
-	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pezzi") {
+	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pezzi") || strings.HasPrefix(back, "/diario/pezzo/") {
 		redirect = back
 	}
 	if _, err := a.db.Exec(query, id); err != nil {

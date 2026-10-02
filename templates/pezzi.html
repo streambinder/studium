@@ -24,7 +24,7 @@
 {{range .Pieces}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
 <div class="card-head">
-<strong>{{.Composer}} — {{.Work}}</strong>
+<strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong>
 <span class="badge kind">{{.Kind}}</span>
 {{if .Archived}}<span class="badge muted">archiviato</span>
 {{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
@@ -34,15 +34,6 @@
 {{range $c := .Concorsi}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}</span>{{if $c.Estratto}}<span class="meta">({{$c.Estratto}})</span>{{end}}{{end}}
 </div>{{end}}
 <div class="diff-row"><label>Difficoltà <input type="range" class="diff-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Difficulty}}"> <output>{{.Difficulty}}</output></label><span class="diff-state" aria-live="polite"></span></div>
-<div class="row btns">
-<a class="btn" href="/diario/pezzo/{{.ID}}">Diario</a>
-<a class="btn secondary" href="/pezzi/{{.ID}}/modifica">Modifica</a>
-{{if .Archived}}
-<form method="post" action="/pezzi/{{.ID}}/ripristina" class="inline"><input type="hidden" name="ritorna" value="/pezzi{{if $.Query}}?{{$.Query}}{{end}}"><button class="secondary" type="submit">Ripristina</button></form>
-{{else}}
-<form method="post" action="/pezzi/{{.ID}}/archivia" class="inline"><input type="hidden" name="ritorna" value="/pezzi{{if $.Query}}?{{$.Query}}{{end}}"><button class="secondary" type="submit">Archivia</button></form>
-{{end}}
-</div>
 </article>
 {{else}}
 <p class="empty">Nessun pezzo con questi filtri.</p>
