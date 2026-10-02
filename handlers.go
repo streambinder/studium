@@ -515,6 +515,11 @@ func clampDifficulty(r *http.Request) int {
 	return d
 }
 
+// linkNote reads the per-link note submitted for a concorso checkbox.
+func linkNote(r *http.Request, concorsoID int64) string {
+	return strings.TrimSpace(r.FormValue("nota-" + strconv.FormatInt(concorsoID, 10)))
+}
+
 func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -542,7 +547,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, cid := range formIDs(r, "concorso") {
-		if _, err := a.db.Exec(`INSERT OR IGNORE INTO piece_concorso(piece_id, concorso_id) VALUES(?,?)`, pid, cid); err != nil {
+		if _, err := a.db.Exec(`INSERT OR IGNORE INTO piece_concorso(piece_id, concorso_id, notes) VALUES(?,?,?)`, pid, cid, linkNote(r, cid)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -557,6 +562,7 @@ type pieceFormData struct {
 	Piece    Piece
 	Concorsi []Concorso
 	Selected map[int64]bool
+	Notes    map[int64]string
 }
 
 func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
@@ -569,11 +575,13 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sel := map[int64]bool{}
+	notes := map[int64]string{}
 	for _, c := range p.Concorsi {
 		sel[c.ID] = true
+		notes[c.ID] = c.Notes
 	}
 	a.render(w, "pezzo_form.html", pieceFormData{
-		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel,
+		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel, Notes: notes,
 	})
 }
 
@@ -627,7 +635,7 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, cid := range formIDs(r, "concorso") {
-		if _, err := tx.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(?,?)`, id, cid); err != nil {
+		if _, err := tx.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id, notes) VALUES(?,?,?)`, id, cid, linkNote(r, cid)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

@@ -15,6 +15,7 @@ type Concorso struct {
 	Date     string // YYYY-MM-DD
 	Weight   int
 	Archived bool
+	Notes    string // per-link notes, set only when read through piece_concorso
 }
 
 // Piece kinds.
@@ -142,6 +143,13 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate difficulty: %w", err)
 		}
 	}
+	// piece_concorso.notes keeps per-link notes on the linking entity.
+	if _, err := db.Exec(`ALTER TABLE piece_concorso ADD COLUMN notes TEXT NOT NULL DEFAULT ''`); err != nil {
+		// duplicate column means the migration already ran; anything else is real.
+		if !isDupColumnErr(err) {
+			return fmt.Errorf("migrate piece_concorso notes: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -199,13 +207,17 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 }
 
 func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
-	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL
+	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.notes
 		FROM concorsi c JOIN piece_concorso pc ON pc.concorso_id=c.id
 		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
 	if err != nil {
 		return nil, err
 	}
-	return scanConcorsi(rows)
+	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
+		var c Concorso
+		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Notes)
+		return c, err
+	})
 }
 
 // closeRows checks rows.Err, closes rows (logging close failures) and
