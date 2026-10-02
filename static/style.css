@@ -1317,8 +1317,8 @@ a:hover {
 }
 
 .ptile span {
-  font-size: clamp(8px, 12cqw, 22px);
-  font-weight: 600;
+  font-size: clamp(8px, 12cqw, 1rem);
+  font-weight: 500;
   line-height: 1.25;
   text-align: center;
   text-wrap: balance;
@@ -1361,6 +1361,7 @@ a:hover {
   align-items: center;
   gap: 10px;
   margin-top: 10px;
+  margin-bottom: 1.5rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
