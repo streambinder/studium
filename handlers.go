@@ -483,6 +483,7 @@ type pezziData struct {
 	FilterConcorso int64
 	FilterKind     string
 	ShowArchived   bool
+	Query          string // raw query of the current list view, for return redirects
 }
 
 func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
@@ -501,6 +502,7 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "pezzi.html", pezziData{
 		Title: "Pezzi", Nav: "pezzi", Pieces: pieces, Concorsi: concorsi,
 		FilterConcorso: concorsoID, FilterKind: kind, ShowArchived: showArchived,
+		Query: r.URL.RawQuery,
 	})
 }
 
@@ -650,12 +652,20 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 
 // setArchived runs an archive/restore UPDATE for one row and redirects.
 // The query is a static string chosen by the caller; what labels the event
-// in the log.
+// in the log. If the form carries a "ritorna" value pointing at /pezzi, it
+// is used as the redirect so the list keeps the user's view and filters.
 func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect, what string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	id, ok := pathID(r)
 	if !ok {
 		http.NotFound(w, r)
 		return
+	}
+	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pezzi") {
+		redirect = back
 	}
 	if _, err := a.db.Exec(query, id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

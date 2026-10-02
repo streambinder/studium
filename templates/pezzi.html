@@ -38,9 +38,9 @@
 <a class="btn" href="/diario/pezzo/{{.ID}}">Diario</a>
 <a class="btn secondary" href="/pezzi/{{.ID}}/modifica">Modifica</a>
 {{if .Archived}}
-<form method="post" action="/pezzi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
+<form method="post" action="/pezzi/{{.ID}}/ripristina" class="inline"><input type="hidden" name="ritorna" value="/pezzi{{if $.Query}}?{{$.Query}}{{end}}"><button class="secondary" type="submit">Ripristina</button></form>
 {{else}}
-<form method="post" action="/pezzi/{{.ID}}/archivia" class="inline"><button class="secondary" type="submit">Archivia</button></form>
+<form method="post" action="/pezzi/{{.ID}}/archivia" class="inline"><input type="hidden" name="ritorna" value="/pezzi{{if $.Query}}?{{$.Query}}{{end}}"><button class="secondary" type="submit">Archivia</button></form>
 {{end}}
 </div>
 </article>
