@@ -16,7 +16,7 @@
 <h1>{{dateIT .Date}}</h1>
 <div class="hero-stats">
 <div class="hero-stat"><span class="num" data-count="{{.Budget}}">{{.Budget}}</span><span class="lbl">minuti di budget</span></div>
-<div class="hero-stat"><span class="num" data-count="{{len .Items}}">{{len .Items}}</span><span class="lbl">pezzi in piano</span></div>
+<div class="hero-stat"><span class="num" data-count="{{.PlanTotal}}">{{.PlanTotal}}</span><span class="lbl">pezzi in piano</span></div>
 <div class="hero-stat"><span class="num" data-count="{{.Logged}}">{{.Logged}}</span><span class="lbl">minuti registrati oggi</span></div>
 </div>
 <div class="budget-bar" role="img" aria-label="{{.Logged}} minuti registrati oggi su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
@@ -124,6 +124,16 @@
 {{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
 </article>
 {{end}}{{end}}
+{{range .ExtraDone}}
+<article class="card plan-card done-card reveal">
+<span class="badge done done-corner">✓ {{.Logged}} min oggi</span>
+<div class="card-head">
+<strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
+</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{if .P.Movement}}<span>{{.P.Movement}}</span>{{end}}</div>
+{{if .P.Concorsi}}<div class="chips">{{range .P.Concorsi}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
+</article>
+{{end}}
 </section>
 {{end}}
 {{end}}

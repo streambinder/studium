@@ -187,10 +187,19 @@ type todayData struct {
 	BudgetPct       int // LoggedPct capped at 100, for the bar width
 	NoBudget        bool
 	Items           []planItem
-	OpenCount       int     // plan items not yet practiced today
-	DoneCount       int     // plan items already practiced today
+	OpenCount       int // plan items not yet practiced today
+	DoneCount       int // pieces already practiced today, in and out of plan
+	PlanTotal       int // plan items plus pieces practiced outside the plan
+	ExtraDone       []doneEntry
 	Pieces          []Piece // all active pieces, for the manual session form
 	Readiness       []readinessRow
+}
+
+// doneEntry is a piece practiced today outside the plan, shown
+// among the Completati.
+type doneEntry struct {
+	P      Piece
+	Logged int
 }
 
 // readinessRow is one upcoming concorso with the mean preparation of
@@ -460,6 +469,46 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	data.Pieces = pieces
+	// Pieces practiced today outside the plan (recorded by hand) join
+	// the hero count and the Completati list.
+	inPlan := make(map[int64]bool, len(data.Items))
+	for _, it := range data.Items {
+		inPlan[it.Piece.ID] = true
+	}
+	byID := make(map[int64]Piece, len(pieces))
+	for _, p := range pieces {
+		byID[p.ID] = p
+	}
+	xrows, err := a.db.Query(`SELECT piece_id, COALESCE(SUM(minutes), 0)
+		FROM sessions WHERE date = ? AND (minutes > 0 OR confidence > 0)
+		GROUP BY piece_id ORDER BY piece_id`, today)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer closeRowsLogged(xrows)
+	for xrows.Next() {
+		var pid int64
+		var mins int
+		if err := xrows.Scan(&pid, &mins); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if inPlan[pid] {
+			continue
+		}
+		p, ok := byID[pid]
+		if !ok {
+			continue
+		}
+		data.ExtraDone = append(data.ExtraDone, doneEntry{P: p, Logged: mins})
+		data.DoneCount++
+	}
+	if err := xrows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data.PlanTotal = len(data.Items) + len(data.ExtraDone)
 	data.Readiness, err = a.concorsoReadiness(today, pieces)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
