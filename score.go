@@ -20,7 +20,6 @@ type ScoreInput struct {
 	Days       int     // days until the nearest upcoming concorso
 	Confidence float64 // latest rated confidence 1..5 (default 2.5 when never rated)
 	SinceDays  int     // days since last practiced session with minutes>0 (default 30)
-	Pinned     bool    // postponed from yesterday ("rimandato")
 }
 
 // ScoreBreakdown is the explainable result of the formula.
@@ -29,7 +28,7 @@ type ScoreBreakdown struct {
 	Urgency float64 // 1 + k·max(0, 1 − days/horizon)
 	Need    float64 // 1 + (5 − confidence)/5
 	Recency float64 // 1 + min(since/7, cap)
-	Score   float64 // base · urgency · need · recency (·1.5 when pinned)
+	Score   float64 // base · urgency · need · recency
 }
 
 // ComputeScore applies the daily-score formula. Weights must be non-empty:
@@ -43,9 +42,6 @@ func ComputeScore(in ScoreInput, c Coeffs) ScoreBreakdown {
 	need := 1 + (5-in.Confidence)/5
 	recency := 1 + math.Min(float64(in.SinceDays)/7, c.RecencyCap)
 	score := base * urgency * need * recency
-	if in.Pinned {
-		score *= 1.5
-	}
 	return ScoreBreakdown{
 		Base:    base,
 		Urgency: urgency,

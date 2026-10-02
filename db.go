@@ -399,30 +399,16 @@ func (a *App) daysSincePractice(pieceID int64, today string) (days int, ok bool,
 	return n, true, nil
 }
 
-// postponedYesterday reports whether the latest session for the piece is a
-// "rimandato" marker from yesterday (used for the 1.5x pinned boost).
-func (a *App) postponedYesterday(pieceID int64, yesterday string) (bool, error) {
-	var date, note string
-	err := a.db.QueryRow(`SELECT date, note FROM sessions WHERE piece_id=?
-		ORDER BY date DESC, id DESC LIMIT 1`, pieceID).Scan(&date, &note)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return date == yesterday && note == "rimandato", nil
-}
-
 type todayMark struct {
-	Logged  int
-	Skipped bool // a 'rimandato' or 'saltato' marker exists for today
+	Logged    int
+	Skipped   bool // a 'saltato' marker exists for today
+	Practiced bool // a real session (minutes or rated confidence) exists for today
 }
 
 // todayMark summarizes today's sessions for a piece.
 func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
 	var m todayMark
-	rows, err := a.db.Query(`SELECT minutes, note FROM sessions WHERE piece_id=? AND date=?`, pieceID, today)
+	rows, err := a.db.Query(`SELECT minutes, confidence, note FROM sessions WHERE piece_id=? AND date=?`, pieceID, today)
 	if err != nil {
 		return m, err
 	}
@@ -432,13 +418,18 @@ func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
 		}
 	}()
 	for rows.Next() {
-		var minutes int
+		var minutes, confidence int
 		var note string
-		if err := rows.Scan(&minutes, &note); err != nil {
+		if err := rows.Scan(&minutes, &confidence, &note); err != nil {
 			return m, err
 		}
 		m.Logged += minutes
-		if note == "rimandato" || note == "saltato" {
+		if minutes > 0 || confidence > 0 {
+			m.Practiced = true
+		}
+		// 'rimandato' is honored only for markers written before the
+		// postpone feature was removed: they skip the piece for today.
+		if note == "saltato" || note == "rimandato" {
 			m.Skipped = true
 		}
 	}

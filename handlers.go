@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type App struct {
@@ -21,7 +20,6 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /disponibilita", a.handleAddAvailability)
 	mux.HandleFunc("POST /disponibilita/elimina", a.handleDelAvailability)
 	mux.HandleFunc("POST /sessione", a.handleSession)
-	mux.HandleFunc("POST /sessione/rimanda", a.handlePostpone)
 	mux.HandleFunc("POST /sessione/salta", a.handleSkip)
 	mux.HandleFunc("GET /pezzi", a.handlePezzi)
 	mux.HandleFunc("POST /pezzi", a.handleAddPiece)
@@ -169,7 +167,7 @@ type planItem struct {
 	ConfRated  bool
 	Since      int
 	SinceNever bool
-	Pinned     bool
+	Practiced  bool // a real session for this piece exists for today
 	Minutes    int
 	StartMin   int // -1 when it does not fit any free window
 	EndMin     int
@@ -272,7 +270,7 @@ func upcomingConcorsi(p Piece, today string) ([]Concorso, []int, int, error) {
 
 // scorePiece computes the daily plan item for one piece. ok=false means the
 // piece is excluded from today's plan (no upcoming concorso or skipped).
-func (a *App) scorePiece(p Piece, today, yday string, coeffs Coeffs) (item planItem, ok bool, err error) {
+func (a *App) scorePiece(p Piece, today string, coeffs Coeffs) (item planItem, ok bool, err error) {
 	upcoming, weights, days, err := upcomingConcorsi(p, today)
 	if err != nil {
 		return planItem{}, false, err
@@ -302,16 +300,11 @@ func (a *App) scorePiece(p Piece, today, yday string, coeffs Coeffs) (item planI
 	if sinceNever {
 		since = 30
 	}
-	pinned, err := a.postponedYesterday(p.ID, yday)
-	if err != nil {
-		return planItem{}, false, err
-	}
 	br := ComputeScore(ScoreInput{
 		Weights:    weights,
 		Days:       days,
 		Confidence: conf,
 		SinceDays:  since,
-		Pinned:     pinned,
 	}, coeffs)
 	return planItem{
 		Piece:      p,
@@ -326,7 +319,7 @@ func (a *App) scorePiece(p Piece, today, yday string, coeffs Coeffs) (item planI
 		ConfRated:  rated,
 		Since:      since,
 		SinceNever: sinceNever,
-		Pinned:     pinned,
+		Practiced:  mark.Practiced,
 		Logged:     mark.Logged,
 		StartMin:   -1,
 	}, true, nil
@@ -341,13 +334,9 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	yday := ""
-	if t, err := time.Parse("2006-01-02", today); err == nil {
-		yday = t.AddDate(0, 0, -1).Format("2006-01-02")
-	}
 	var items []planItem
 	for _, p := range pieces {
-		item, ok, err := a.scorePiece(p, today, yday, coeffs)
+		item, ok, err := a.scorePiece(p, today, coeffs)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -371,6 +360,42 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	return items, len(scores), nil
 }
 
+// autoSkipOverflow drops the plan pieces that no longer fit today's
+// remaining time, least urgent first: unpracticed pieces whose summed
+// suggested minutes exceed what is left are marked 'saltato' for
+// today, so they leave the plan with a trace in the diary. At least
+// the most urgent unpracticed piece always survives.
+func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([]planItem, error) {
+	sum, open := 0, 0
+	for _, it := range items {
+		if !it.Practiced {
+			sum += it.Minutes
+			open++
+		}
+	}
+	for sum > remaining && open > 1 {
+		victim := -1
+		for i := len(items) - 1; i >= 0; i-- {
+			if !items[i].Practiced {
+				victim = i
+				break
+			}
+		}
+		if victim < 0 {
+			break
+		}
+		if _, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
+			VALUES(?,?,0,0,'saltato')`, today, items[victim].Piece.ID); err != nil {
+			return nil, err
+		}
+		log.Printf("event session auto-skipped piece=%d date=%s", items[victim].Piece.ID, today)
+		sum -= items[victim].Minutes
+		open--
+		items = append(items[:victim], items[victim+1:]...)
+	}
+	return items, nil
+}
+
 func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	today := todayStr()
 	avail, err := a.availabilityFor(today)
@@ -387,6 +412,19 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			data.Budget += v.EndMin - v.StartMin
 		}
 	}
+	var logged int
+	if err := a.db.QueryRow(`SELECT COALESCE(SUM(minutes), 0) FROM sessions WHERE date=?`, today).Scan(&logged); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data.Logged = logged
+	if data.Budget > 0 {
+		data.LoggedPct = logged * 100 / data.Budget
+		data.BudgetPct = data.LoggedPct
+		if data.BudgetPct > 100 {
+			data.BudgetPct = 100
+		}
+	}
 	if data.HasAvailability && data.Budget > 0 {
 		items, _, err := a.buildPlan(today)
 		if err != nil {
@@ -401,6 +439,11 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		items = items[:len(mins)]
 		for i := range items {
 			items[i].Minutes = mins[i]
+		}
+		items, err = a.autoSkipOverflow(items, data.Budget-data.Logged, today)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		// Lay the pieces out sequentially across the free windows.
 		wi := 0
@@ -427,19 +470,6 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		data.Items = items
 	} else if data.HasAvailability {
 		data.NoBudget = true
-	}
-	var logged int
-	if err := a.db.QueryRow(`SELECT COALESCE(SUM(minutes), 0) FROM sessions WHERE date=?`, today).Scan(&logged); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	data.Logged = logged
-	if data.Budget > 0 {
-		data.LoggedPct = logged * 100 / data.Budget
-		data.BudgetPct = data.LoggedPct
-		if data.BudgetPct > 100 {
-			data.BudgetPct = 100
-		}
 	}
 	pieces, err := a.listPieces(0, "", false)
 	if err != nil {
@@ -536,10 +566,6 @@ func (a *App) markSession(w http.ResponseWriter, r *http.Request, note string) {
 	}
 	log.Printf("event session marked piece=%d date=%s note=%s", pieceID, todayStr(), note)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-func (a *App) handlePostpone(w http.ResponseWriter, r *http.Request) {
-	a.markSession(w, r, "rimandato")
 }
 
 func (a *App) handleSkip(w http.ResponseWriter, r *http.Request) {

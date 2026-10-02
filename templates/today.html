@@ -74,7 +74,6 @@
 <span class="plan-rank" aria-hidden="true"></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
-{{if .Pinned}}<span class="badge pin">rimandato da ieri</span>{{end}}
 {{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
@@ -89,7 +88,7 @@
 <li><strong>bisogno {{f1 .Need}}</strong> — confidenza {{confLabel .Conf .ConfRated}}</li>
 <li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>
 </ul>
-<p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}}{{if .Pinned}} × 1,5 (rimandato da ieri){{end}} = <strong>{{f1 .Score}}</strong></p>
+<p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}} = <strong>{{f1 .Score}}</strong></p>
 </div>
 </details>
 <form method="post" class="checkin">
@@ -106,7 +105,6 @@
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
 <div class="row btns">
 <button type="submit" formaction="/sessione">Registra</button>
-<button type="submit" formaction="/sessione/rimanda" class="secondary">Rimanda a domani</button>
 <button type="submit" formaction="/sessione/salta" class="secondary">Salta</button>
 </div>
 </form>

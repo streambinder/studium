@@ -73,15 +73,6 @@ func TestComputeScoreRecency(t *testing.T) {
 	}
 }
 
-func TestComputeScorePinnedBoost(t *testing.T) {
-	c := DefaultCoeffs()
-	plain := ComputeScore(ScoreInput{Weights: []int{2}, Days: 200, Confidence: 5, SinceDays: 0}, c)
-	pinned := ComputeScore(ScoreInput{Weights: []int{2}, Days: 200, Confidence: 5, SinceDays: 0, Pinned: true}, c)
-	if !approxEq(pinned.Score, plain.Score*1.5) {
-		t.Fatalf("pinned score = %v, want 1.5x %v", pinned.Score, plain.Score)
-	}
-}
-
 func TestComputeScoreCustomCoeffs(t *testing.T) {
 	c := Coeffs{UrgencyK: 4, UrgencyHorizon: 30, RecencyCap: 0.5}
 	br := ComputeScore(ScoreInput{Weights: []int{1}, Days: 15, Confidence: 5, SinceDays: 14}, c)

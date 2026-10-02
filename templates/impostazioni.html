@@ -8,7 +8,7 @@
 <section class="panel reveal">
 <div class="section-head"><h2>La formula del piano giornaliero</h2></div>
 <p>Per ogni pezzo, ogni giorno:</p>
-<p class="formula">punteggio = base × urgenza × bisogno × ripresa (× 1,5 se rimandato da ieri)</p>
+<p class="formula">punteggio = base × urgenza × bisogno × ripresa</p>
 <ul>
 <li><strong>base</strong> = somma dei pesi dei concorsi <em>futuri</em> in cui compare il pezzo. I concorsi con data passata o archiviati non contano; un pezzo senza concorsi futuri esce dal piano.</li>
 <li><strong>urgenza</strong> = 1 + {{f1 .Coeffs.UrgencyK}} × max(0, 1 − giorni_alla_prova / {{f1 .Coeffs.UrgencyHorizon}})</li>

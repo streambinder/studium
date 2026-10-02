@@ -117,6 +117,54 @@ func TestTreemapSingleAndEmpty(t *testing.T) {
 	}
 }
 
+func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	for _, s := range []string{
+		`INSERT INTO pieces(id, composer, work) VALUES(1, 'A', 'a')`,
+		`INSERT INTO pieces(id, composer, work) VALUES(2, 'B', 'b')`,
+		`INSERT INTO pieces(id, composer, work) VALUES(3, 'C', 'c')`,
+	} {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	a := &App{db: db}
+	items := []planItem{
+		{Piece: Piece{ID: 1}, Minutes: 50, Practiced: true},
+		{Piece: Piece{ID: 2}, Minutes: 40},
+		{Piece: Piece{ID: 3}, Minutes: 30},
+	}
+	got, err := a.autoSkipOverflow(items, 50, "2026-10-02")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[1].Piece.ID != 2 {
+		t.Fatalf("want pieces 1 and 2 to survive, got %+v", got)
+	}
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=3 AND note='saltato'`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("want one saltato marker for piece 3, got %d", n)
+	}
+	// With almost no time left, the last unpracticed piece still survives.
+	got, err = a.autoSkipOverflow(got, 1, "2026-10-02")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("most urgent unpracticed piece must survive, got %+v", got)
+	}
+}
+
 func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
