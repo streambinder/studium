@@ -65,11 +65,10 @@
 <span class="plan-rank" aria-hidden="true"></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
-<span class="badge kind">{{.Piece.Kind}}</span>
 {{if .Pinned}}<span class="badge pin">rimandato da ieri</span>{{end}}
 {{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
 </div>
-{{if .Piece.Movement}}<div class="meta">{{.Piece.Movement}}</div>{{end}}
+<div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
 {{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
 <div class="slot">{{if ge .StartMin 0}}{{hhmm .StartMin}}–{{hhmm .EndMin}} · {{end}}{{.Minutes}} min suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>

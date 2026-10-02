@@ -10,7 +10,7 @@
 <div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
 <div class="prepmap panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
 <div class="ptiles">
-{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 6px);top:calc({{f1 .Y}}% + 6px);width:calc({{f1 .W}}% - 12px);height:calc({{f1 .H}}% - 12px)" href="/diario/pezzo/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
+{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diario/pezzo/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
