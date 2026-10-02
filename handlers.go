@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type App struct {
@@ -34,6 +35,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /concorsi/{id}/archivia", a.handleArchiveConcorso)
 	mux.HandleFunc("POST /concorsi/{id}/ripristina", a.handleRestoreConcorso)
 	mux.HandleFunc("GET /diario", a.handleDiario)
+	mux.HandleFunc("GET /diario/giorno/{date}", a.handleDiarioGiorno)
 	mux.HandleFunc("GET /diario/pezzo/{id}", a.handlePezzoDetail)
 	mux.HandleFunc("GET /impostazioni", a.handleImpostazioni)
 	mux.HandleFunc("POST /impostazioni", a.handleSaveImpostazioni)
@@ -185,6 +187,8 @@ type todayData struct {
 	BudgetPct       int // LoggedPct capped at 100, for the bar width
 	NoBudget        bool
 	Items           []planItem
+	OpenCount       int     // plan items not yet practiced today
+	DoneCount       int     // plan items already practiced today
 	Pieces          []Piece // all active pieces, for the manual session form
 	Readiness       []readinessRow
 }
@@ -440,6 +444,13 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			return
 		}
 		data.Items = items
+		for _, it := range items {
+			if it.Practiced {
+				data.DoneCount++
+			} else {
+				data.OpenCount++
+			}
+		}
 	} else if data.HasAvailability {
 		data.NoBudget = true
 	}
@@ -886,6 +897,66 @@ func (a *App) handleDiario(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	a.render(w, "diario.html", map[string]any{"Title": "Diario", "Nav": "diario", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile})
+}
+
+type giornoPiece struct {
+	PieceID  int64
+	Title    string
+	Movement string
+	Minutes  int
+	Sessions []Session
+}
+
+type giornoData struct {
+	Title   string
+	Nav     string
+	Date    string
+	Minutes int
+	Entries []giornoPiece
+}
+
+// handleDiarioGiorno shows one day with every piece that concerns it.
+func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
+	date := r.PathValue("date")
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note,
+		p.id, p.composer, p.work, p.movement
+		FROM sessions s JOIN pieces p ON p.id = s.piece_id
+		WHERE s.date = ? ORDER BY p.composer, p.work, s.id`, date)
+	if !ok {
+		return
+	}
+	defer closeRowsLogged(rows)
+	data := giornoData{Title: "Diario", Nav: "diario", Date: date}
+	byKey := map[int64]int{}
+	for rows.Next() {
+		var s Session
+		var pid int64
+		var composer, work, movement string
+		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note,
+			&pid, &composer, &work, &movement); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		idx, seen := byKey[s.PieceID]
+		if !seen {
+			title := composer + " — " + work
+			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement})
+			idx = len(data.Entries) - 1
+			byKey[s.PieceID] = idx
+		}
+		data.Entries[idx].Sessions = append(data.Entries[idx].Sessions, s)
+		data.Entries[idx].Minutes += s.Minutes
+		data.Minutes += s.Minutes
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "giornata.html", data)
 }
 
 type pezzoDetailData struct {

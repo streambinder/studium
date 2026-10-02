@@ -29,7 +29,7 @@
 
 <div class="stack">
 {{range .Days}}
-<article class="card reveal">
+<a class="card reveal day-link" href="/diario/giorno/{{.Date}}">
 <div class="day-row">
 <span class="day-dot" aria-hidden="true"></span>
 <span class="day-date">{{dateIT .Date}}</span>
@@ -37,7 +37,7 @@
 <span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>
 <span class="badge kind">{{.Pieces}} pezzi</span>
 </div>
-</article>
+</a>
 {{else}}
 <p class="empty">Nessuna seduta registrata finora.</p>
 {{end}}

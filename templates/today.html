@@ -68,8 +68,8 @@
 <section class="panel reveal"><p class="empty">Nessun pezzo nel piano di oggi: concorsi conclusi, pezzi archiviati, oppure il tempo di studio di oggi è già esaurito. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
 {{else}}
 <section>
-<div class="section-head"><h2>Il piano</h2><span class="meta">{{len .Items}} pezzi · in ordine di priorità</span></div>
-{{range .Items}}
+<div class="section-head"><h2>Il piano</h2><span class="meta">{{.OpenCount}} pezzi · in ordine di priorità</span></div>
+{{range .Items}}{{if not .Practiced}}
 <article class="card plan-card reveal">
 <span class="plan-rank" aria-hidden="true"></span>
 <div class="card-head">
@@ -109,8 +109,23 @@
 </div>
 </form>
 </article>
-{{end}}
+{{end}}{{end}}
 </section>
+{{if .DoneCount}}
+<section>
+<div class="section-head"><h2>Completati</h2><span class="meta">{{.DoneCount}} pezz{{if eq .DoneCount 1}}o{{else}}i{{end}} già in diario oggi</span></div>
+{{range .Items}}{{if .Practiced}}
+<article class="card plan-card done-card reveal">
+<span class="badge done done-corner">✓ {{.Logged}} min oggi</span>
+<div class="card-head">
+<strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
+</div>
+<div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
+{{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
+</article>
+{{end}}{{end}}
+</section>
+{{end}}
 {{end}}
 <script>
 (function() {

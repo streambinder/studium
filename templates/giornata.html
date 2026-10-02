@@ -1,0 +1,22 @@
+{{define "content"}}
+<div class="page-head">
+<span class="overline">Diario</span>
+<h1>{{dateIT .Date}}</h1>
+<p class="meta">{{.Minutes}} min registrati · {{len .Entries}} pezz{{if eq (len .Entries) 1}}o{{else}}i{{end}}</p>
+</div>
+
+<div class="stack">
+{{range .Entries}}
+<article class="card reveal">
+<div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.PieceID}}">{{.Title}}</a></strong>
+{{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
+</div>
+{{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
+{{range .Sessions}}<div class="meta session-line">{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{else if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{else}}{{if gt .Minutes 0}}{{.Minutes}} min{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}confidenza {{.Confidence}}/5{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
+</article>
+{{else}}
+<p class="empty">Nessuna seduta registrata in questa giornata.</p>
+{{end}}
+</div>
+<p><a href="/diario">← torna al diario</a></p>
+{{end}}

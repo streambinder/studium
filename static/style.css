@@ -425,6 +425,28 @@ h2 {
   overflow: hidden;
 }
 
+.done-card {
+  background: #e9e2cf;
+  border-color: #d5c9a8;
+  box-shadow: none;
+}
+
+.done-corner {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+}
+
+.day-link {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.day-link:hover {
+  color: var(--ink);
+}
+
 .plan-rank {
   position: absolute;
   left: 0;
