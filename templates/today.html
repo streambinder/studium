@@ -5,6 +5,7 @@
 <h1>{{dateIT .Date}}</h1>
 <p class="hero-sub">Dimmi quando puoi studiare: aggiungi le tue fasce di studio e costruisco il piano della giornata.</p>
 </section>
+{{template "readiness" .}}
 <section class="panel reveal">
 <h2>Cosa studi oggi?</h2>
 {{template "availForm" .}}
@@ -20,6 +21,8 @@
 </div>
 <div class="budget-bar" role="img" aria-label="{{.Planned}} minuti pianificati su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
 </section>
+
+{{template "readiness" .}}
 
 <section class="panel reveal">
 <div class="section-head"><h2>Disponibilità di oggi</h2></div>
@@ -85,6 +88,11 @@
 </details>
 <form method="post" class="checkin">
 <input type="hidden" name="piece_id" value="{{.Piece.ID}}">
+<div class="timer" data-piece="{{.Piece.ID}}" data-day="{{$.Date}}">
+<span class="timer-display">0:00</span>
+<button type="button" class="secondary timer-toggle">Avvia timer</button>
+<button type="button" class="secondary timer-done" hidden>Usa questi minuti</button>
+</div>
 <div class="row">
 <label>Minuti <input type="number" name="minutes" value="{{.Minutes}}" min="0" max="600"></label>
 <label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>{{printf "%.0f" .Conf}}/5</output></label>
@@ -100,5 +108,62 @@
 {{end}}
 </section>
 {{end}}
+<script>
+(function() {
+  var timers = [];
+  function fmt(ms) {
+    var s = Math.floor(ms / 1000);
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+  document.querySelectorAll('.timer').forEach(function(el) {
+    var key = 'studium-timer-' + el.dataset.day + '-' + el.dataset.piece;
+    var display = el.querySelector('.timer-display');
+    var toggle = el.querySelector('.timer-toggle');
+    var done = el.querySelector('.timer-done');
+    var state = { acc: 0, since: 0 };
+    try {
+      var saved = JSON.parse(localStorage.getItem(key) || 'null');
+      if (saved && typeof saved.acc === 'number') state = saved;
+    } catch (e) {}
+    function save() {
+      try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) {}
+    }
+    function elapsed() {
+      return state.acc + (state.since ? Date.now() - state.since : 0);
+    }
+    function paint() {
+      var ms = elapsed();
+      display.textContent = fmt(ms);
+      toggle.textContent = state.since ? 'Pausa' : (state.acc > 0 ? 'Riprendi' : 'Avvia timer');
+      done.hidden = ms < 1000;
+      display.classList.toggle('running', !!state.since);
+    }
+    toggle.addEventListener('click', function() {
+      if (state.since) {
+        state.acc = elapsed();
+        state.since = 0;
+      } else {
+        state.since = Date.now();
+      }
+      save();
+      paint();
+    });
+    done.addEventListener('click', function() {
+      var mins = Math.round(elapsed() / 60000);
+      if (mins < 1) mins = 1;
+      var input = el.closest('form').querySelector('input[name="minutes"]');
+      if (input) input.value = mins;
+      state = { acc: 0, since: 0 };
+      try { localStorage.removeItem(key); } catch (e) {}
+      paint();
+    });
+    paint();
+    timers.push(paint);
+  });
+  if (timers.length) setInterval(function() { timers.forEach(function(p) { p(); }); }, 500);
+})();
+</script>
 {{end}}
 {{end}}

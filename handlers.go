@@ -189,6 +189,61 @@ type todayData struct {
 	NoBudget        bool
 	Items           []planItem
 	Pieces          []Piece // all active pieces, for the manual session form
+	Readiness       []readinessRow
+}
+
+// readinessRow is one upcoming concorso with the mean preparation of
+// its linked active pieces, as a percentage.
+type readinessRow struct {
+	Name   string
+	Date   string
+	Days   int
+	Pieces int
+	Pct    int
+}
+
+// concorsoReadiness averages the preparation score of the active
+// pieces linked to each upcoming concorso.
+func (a *App) concorsoReadiness(today string, pieces []Piece) ([]readinessRow, error) {
+	tiles, err := a.prepTiles(today, prepBiasDesktop)
+	if err != nil {
+		return nil, err
+	}
+	prep := make(map[int64]float64, len(tiles))
+	for _, t := range tiles {
+		prep[t.PieceID] = t.Prep
+	}
+	concorsi, err := a.listConcorsi(false)
+	if err != nil {
+		return nil, err
+	}
+	var out []readinessRow
+	for _, c := range concorsi {
+		if c.Date < today {
+			continue
+		}
+		sum, n := 0.0, 0
+		for _, p := range pieces {
+			for _, pc := range p.Concorsi {
+				if pc.ID == c.ID {
+					sum += prep[p.ID]
+					n++
+				}
+			}
+		}
+		if n == 0 {
+			continue
+		}
+		days, err := daysBetween(today, c.Date)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, readinessRow{
+			Name: c.Name, Date: c.Date, Days: days, Pieces: n,
+			Pct: int(sum / float64(n) * 100),
+		})
+	}
+	return out, nil
 }
 
 // upcomingConcorsi returns the piece's non-archived, not-yet-held concorsi
@@ -386,6 +441,11 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	data.Pieces = pieces
+	data.Readiness, err = a.concorsoReadiness(today, pieces)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	a.render(w, "today.html", data)
 }
 

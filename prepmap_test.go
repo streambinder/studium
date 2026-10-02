@@ -117,6 +117,53 @@ func TestTreemapSingleAndEmpty(t *testing.T) {
 	}
 }
 
+func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	stmts := []string{
+		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Futuro', '2027-01-08', 3)`,
+		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(2, 'Passato', '2020-01-01', 3)`,
+		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Bach', 'Suite')`,
+		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Haydn', 'Concerto')`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 2)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence) VALUES('2026-10-01', 1, 120, 5)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence) VALUES('2026-10-02', 1, 120, 5)`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	a := &App{db: db}
+	pieces, err := a.listPieces(0, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := a.concorsoReadiness("2026-10-02", pieces)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("past concorso should be excluded, got %d rows", len(rows))
+	}
+	r := rows[0]
+	if r.Name != "Futuro" || r.Pieces != 2 || r.Days <= 0 {
+		t.Fatalf("unexpected row: %+v", r)
+	}
+	// One prepared piece and one untouched: the mean sits between.
+	if r.Pct <= 0 || r.Pct >= 100 {
+		t.Fatalf("pct should average prepared and untouched pieces, got %d", r.Pct)
+	}
+}
+
 func TestMigrateDifficultyIdempotent(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {

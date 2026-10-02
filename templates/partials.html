@@ -1,3 +1,18 @@
+{{define "readiness"}}
+{{if .Readiness}}
+<section class="panel reveal">
+<div class="section-head"><h2>Prontezza per concorso</h2></div>
+{{range .Readiness}}
+<div class="ready-row">
+<div class="ready-head"><span class="ready-name">{{.Name}}</span><span class="meta">{{dateIT .Date}} · tra {{.Days}} giorn{{if eq .Days 1}}o{{else}}i{{end}} · {{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span><span class="ready-pct">{{.Pct}}%</span></div>
+<div class="budget-bar"><span style="--w: {{.Pct}}%"></span></div>
+</div>
+{{end}}
+<p class="meta">Media dello stato di preparazione dei pezzi collegati a ciascun concorso.</p>
+</section>
+{{end}}
+{{end}}
+
 {{define "availForm"}}
 <form method="post" action="/disponibilita" class="avail-form">
 <input type="hidden" name="date" value="{{.Date}}">

@@ -302,6 +302,73 @@ h2 {
   width: var(--w, 100%);
 }
 
+/* ---------- readiness per concorso ---------- */
+
+.ready-row {
+  margin-bottom: 1rem;
+}
+
+.ready-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.ready-name {
+  font-weight: 600;
+}
+
+.ready-pct {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--accent-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel .budget-bar {
+  background: var(--line);
+  margin-top: 0.45rem;
+}
+
+.panel .budget-bar > span {
+  background: linear-gradient(90deg, var(--gold), var(--accent-bright));
+  box-shadow: none;
+}
+
+.panel.in .budget-bar > span {
+  width: var(--w, 0%);
+}
+
+/* ---------- plan card timer ---------- */
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.timer-display {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.4rem;
+}
+
+.timer-display.running {
+  color: var(--accent-deep);
+}
+
+.timer button {
+  min-height: 2.2rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.timer button[hidden] {
+  display: none;
+}
+
 /* ---------- panels & cards ---------- */
 
 .panel,
