@@ -72,8 +72,8 @@
 <article class="card base-card reveal">
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
-{{if .Concorsi}}<div class="chips">{{range .Concorsi}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
-<div class="diff-row"><label>Confidenza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Mai toccato</output></label><span class="diff-state" aria-live="polite"></span></div>
+{{if .Concorsi}}<div class="chips">{{range .Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
+<div class="diff-row"><label>Confidenza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Da dichiarare</output></label><button type="button" class="base-save" data-id="{{.ID}}" disabled>Salva</button><span class="diff-state" aria-live="polite"></span></div>
 </article>
 {{end}}
 </section>
@@ -86,15 +86,18 @@
   function label(v) { return v === '0' ? 'Mai toccato' : v + '/5'; }
   document.querySelectorAll('.base-slider').forEach(function(s) {
     var out = s.parentElement.querySelector('output');
-    var state = s.parentElement.parentElement.querySelector('.diff-state');
+    var row = s.parentElement.parentElement;
+    var state = row.querySelector('.diff-state');
+    var btn = row.querySelector('.base-save');
     var card = s.closest('.base-card');
-    s.addEventListener('input', function() { out.textContent = label(s.value); });
-    s.addEventListener('change', function() {
+    s.addEventListener('input', function() { out.textContent = label(s.value); btn.disabled = false; });
+    btn.addEventListener('click', function() {
+      btn.disabled = true;
       fetch('/pezzi/' + s.dataset.id + '/valutazione', {
         method: 'POST',
         body: new URLSearchParams({confidence: s.value})
       }).then(function(r) {
-        if (!r.ok) { state.textContent = 'errore, riprova'; return; }
+        if (!r.ok) { state.textContent = 'errore, riprova'; btn.disabled = false; return; }
         state.textContent = '✓ salvato';
         card.classList.add('saved');
         s.disabled = true;
@@ -104,6 +107,7 @@
         if (document.querySelectorAll('.base-card:not(.saved)').length === 0) location.reload();
       }).catch(function() {
         state.textContent = 'errore, riprova';
+        btn.disabled = false;
       });
     });
   });

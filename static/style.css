@@ -1463,6 +1463,19 @@ a:hover {
   opacity: 0.55;
 }
 
+.base-save {
+  min-height: 0;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: 9px;
+}
+
+.base-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+  box-shadow: none;
+}
+
 .empty-note {
   color: var(--muted);
   margin: 0 0 1rem;

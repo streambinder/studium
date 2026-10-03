@@ -496,14 +496,18 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		data.NoBudget = true
 	}
 	data.Pieces = pieces
-	// Preparation dots on plan pieces, extra pieces and concorso chips.
+	// Preparation dots on plan pieces, extra pieces, baseline pieces
+	// and concorso chips.
 	{
-		tmp := make([]Piece, 0, len(data.Items)+len(data.ExtraDone))
+		tmp := make([]Piece, 0, len(data.Items)+len(data.ExtraDone)+len(data.Baseline))
 		for _, it := range data.Items {
 			tmp = append(tmp, it.Piece)
 		}
 		for _, e := range data.ExtraDone {
 			tmp = append(tmp, e.P)
+		}
+		for _, p := range data.Baseline {
+			tmp = append(tmp, p)
 		}
 		if err := a.stampPrepLevels(tmp); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -525,6 +529,10 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		}
 		for i := range data.ExtraDone {
 			data.ExtraDone[i].P = tmp[k]
+			k++
+		}
+		for i := range data.Baseline {
+			data.Baseline[i] = tmp[k]
 			k++
 		}
 	}
