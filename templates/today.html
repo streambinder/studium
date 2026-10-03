@@ -35,6 +35,7 @@
 </ul>
 <details><summary>Aggiungi una fascia</summary><div class="details-body">{{template "availForm" .}}</div></details>
 </section>
+{{end}}
 
 <section class="panel reveal">
 <details><summary>Registra una sessione a mano</summary>
@@ -63,6 +64,7 @@
 </div></details>
 </section>
 
+{{if .HasAvailability}}
 {{if .NoBudget}}
 <section class="panel reveal"><p class="empty">Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
 {{else if not .Items}}
@@ -114,6 +116,8 @@
 </article>
 {{end}}{{end}}
 </section>
+{{end}}
+{{end}}
 {{if .DoneCount}}
 <section>
 <div class="section-head"><h2>Completati</h2><span class="meta">{{.DoneCount}} pezz{{if eq .DoneCount 1}}o{{else}}i{{end}} già in diario oggi</span></div>
@@ -140,7 +144,6 @@
 </article>
 {{end}}
 </section>
-{{end}}
 {{end}}
 <script>
 (function() {
@@ -211,7 +214,5 @@
     timers.push(paint);
   });
   if (timers.length) setInterval(function() { timers.forEach(function(p) { p(); }); }, 500);
-})();
-</script>
-{{end}}
+})();</script>
 {{end}}
