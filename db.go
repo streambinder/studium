@@ -416,11 +416,13 @@ func (a *App) getPiece(id int64) (Piece, error) {
 	return p, nil
 }
 
-// latestConfidence returns the most recent rated confidence (0..5), rated=false if never rated.
+// latestConfidence returns the most recent declared confidence (0..5).
+// A baseline declaration of 0 (mai toccato) counts as rated; rated=false
+// only when the piece has no valuation at all.
 func (a *App) latestConfidence(pieceID int64) (conf float64, rated bool, err error) {
 	var c sql.NullInt64
 	err = a.db.QueryRow(`SELECT confidence FROM sessions
-		WHERE piece_id=? AND confidence>0 ORDER BY date DESC, id DESC LIMIT 1`, pieceID).Scan(&c)
+		WHERE piece_id=? AND (confidence>0 OR note='baseline') ORDER BY date DESC, id DESC LIMIT 1`, pieceID).Scan(&c)
 	if err == sql.ErrNoRows {
 		return 0, false, nil
 	}
@@ -454,7 +456,7 @@ func (a *App) daysSincePractice(pieceID int64, today string) (days int, ok bool,
 type todayMark struct {
 	Logged    int
 	Skipped   bool // a 'saltato' marker exists for today
-	Practiced bool // a real session (minutes or rated confidence) exists for today
+	Practiced bool // a session with real study time (minutes>0) exists for today
 }
 
 // todayMark summarizes today's sessions for a piece.
@@ -476,7 +478,7 @@ func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
 			return m, err
 		}
 		m.Logged += minutes
-		if minutes > 0 || confidence > 0 {
+		if minutes > 0 {
 			m.Practiced = true
 		}
 		// 'rimandato' is honored only for markers written before the

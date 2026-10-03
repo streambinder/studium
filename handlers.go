@@ -519,7 +519,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		byID[p.ID] = p
 	}
 	xrows, err := a.db.Query(`SELECT piece_id, COALESCE(SUM(minutes), 0)
-		FROM sessions WHERE date = ? AND (minutes > 0 OR confidence > 0)
+		FROM sessions WHERE date = ? AND minutes > 0
 		GROUP BY piece_id ORDER BY piece_id`, today)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1246,7 +1246,7 @@ func concorsoFilterHref(sel map[int64]bool) string {
 
 func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0),
-		COUNT(DISTINCT CASE WHEN minutes > 0 OR confidence > 0 THEN piece_id END)
+		COUNT(DISTINCT CASE WHEN minutes > 0 THEN piece_id END)
 		FROM sessions GROUP BY date ORDER BY date DESC`)
 	if !ok {
 		return
@@ -1372,7 +1372,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 			idx = len(data.Entries) - 1
 			byKey[s.PieceID] = idx
 		}
-		if (s.Minutes > 0 || s.Confidence > 0) && !counted[s.PieceID] {
+		if s.Minutes > 0 && !counted[s.PieceID] {
 			counted[s.PieceID] = true
 			data.Practiced++
 		}
