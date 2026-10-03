@@ -64,6 +64,52 @@
 </div></details>
 </section>
 
+{{if .Baseline}}
+<section id="baseline" data-done="{{.BaselineDone}}" data-total="{{.BaselineTotal}}">
+<div class="section-head"><h2>Da dove parti?</h2><span class="meta"><span id="base-progress">{{.BaselineDone}} di {{.BaselineTotal}}</span> pezzi dichiarati</span></div>
+<p class="empty-note">Per costruire il piano giusto, indica quanto conosci già ogni pezzo: <strong>0 = mai toccato</strong>, 5 = sicuro. È il tuo punto di partenza: potrai aggiornarlo quando vuoi registrando una sessione da 0 minuti.</p>
+{{range .Baseline}}
+<article class="card base-card reveal">
+<div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
+<div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
+{{if .Concorsi}}<div class="chips">{{range .Concorsi}}<span class="chip">{{.Name}}</span>{{end}}</div>{{end}}
+<div class="diff-row"><label>Confidenza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Mai toccato</output></label><span class="diff-state" aria-live="polite"></span></div>
+</article>
+{{end}}
+</section>
+<script>
+(function() {
+  var section = document.getElementById('baseline');
+  var baseDone = parseInt(section.dataset.done, 10) || 0;
+  var baseTotal = parseInt(section.dataset.total, 10) || 0;
+  var saved = 0;
+  function label(v) { return v === '0' ? 'Mai toccato' : v + '/5'; }
+  document.querySelectorAll('.base-slider').forEach(function(s) {
+    var out = s.parentElement.querySelector('output');
+    var state = s.parentElement.parentElement.querySelector('.diff-state');
+    var card = s.closest('.base-card');
+    s.addEventListener('input', function() { out.textContent = label(s.value); });
+    s.addEventListener('change', function() {
+      fetch('/pezzi/' + s.dataset.id + '/valutazione', {
+        method: 'POST',
+        body: new URLSearchParams({confidence: s.value})
+      }).then(function(r) {
+        if (!r.ok) { state.textContent = 'errore, riprova'; return; }
+        state.textContent = '✓ salvato';
+        card.classList.add('saved');
+        s.disabled = true;
+        saved++;
+        var prog = document.getElementById('base-progress');
+        if (prog) prog.textContent = (baseDone + saved) + ' di ' + baseTotal;
+        if (document.querySelectorAll('.base-card:not(.saved)').length === 0) location.reload();
+      }).catch(function() {
+        state.textContent = 'errore, riprova';
+      });
+    });
+  });
+})();
+</script>
+{{else}}
 {{if .HasAvailability}}
 {{if .NoBudget}}
 <section class="panel reveal"><p class="empty">Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
@@ -116,6 +162,7 @@
 </article>
 {{end}}{{end}}
 </section>
+{{end}}
 {{end}}
 {{end}}
 {{if .DoneCount}}

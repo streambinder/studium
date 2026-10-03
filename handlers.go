@@ -28,6 +28,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /pezzi/{id}/modifica", a.handleEditPiece)
 	mux.HandleFunc("POST /pezzi/{id}/modifica", a.handleUpdatePiece)
 	mux.HandleFunc("POST /pezzi/{id}/difficolta", a.handleSetDifficulty)
+	mux.HandleFunc("POST /pezzi/{id}/valutazione", a.handleSetValutazione)
 	mux.HandleFunc("POST /concorsi/{id}/priorita", a.handleSetPriority)
 	mux.HandleFunc("POST /pezzi/{id}/archivia", a.handleArchivePiece)
 	mux.HandleFunc("POST /pezzi/{id}/ripristina", a.handleRestorePiece)
@@ -197,6 +198,9 @@ type todayData struct {
 	DoneCount       int // pieces already practiced today, in and out of plan
 	PlanTotal       int // plan items plus pieces practiced outside the plan
 	ExtraDone       []doneEntry
+	Baseline        []Piece // active pieces still missing a starting valuation
+	BaselineDone    int     // pieces of upcoming concorsi already valued
+	BaselineTotal   int     // pieces of upcoming concorsi in scope for the valuation gate
 	Pieces          []Piece // all active pieces, for the manual session form
 	Readiness       []readinessRow
 }
@@ -439,7 +443,28 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			data.BudgetPct = 100
 		}
 	}
-	if data.HasAvailability && data.Budget > 0 {
+	pieces, err := a.listPieces(0, "", false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	valued, err := a.valuedPieceIDs()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, p := range pieces {
+		if !p.HasActive {
+			continue
+		}
+		data.BaselineTotal++
+		if valued[p.ID] {
+			data.BaselineDone++
+		} else {
+			data.Baseline = append(data.Baseline, p)
+		}
+	}
+	if len(data.Baseline) == 0 && data.HasAvailability && data.Budget > 0 {
 		items, _, err := a.buildPlan(today)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -469,11 +494,6 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		}
 	} else if data.HasAvailability {
 		data.NoBudget = true
-	}
-	pieces, err := a.listPieces(0, "", false)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 	data.Pieces = pieces
 	// Preparation dots on plan pieces, extra pieces and concorso chips.
@@ -784,6 +804,51 @@ func (a *App) handleSetDifficulty(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("event piece difficulty id=%d value=%d", id, d)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleSetValutazione records a baseline declaration as a zero-minute
+// session carrying only its confidence (0 = mai toccato, 1..5 = scala
+// abituale). Zero-minute sessions steer confidence and preparation but
+// never count as studied.
+func (a *App) handleSetValutazione(w http.ResponseWriter, r *http.Request) {
+	p, ok := a.pieceOr404(w, r)
+	if !ok {
+		return
+	}
+	conf := formInt(r, "confidence", 0)
+	if conf < 0 {
+		conf = 0
+	}
+	if conf > 5 {
+		conf = 5
+	}
+	if _, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
+		VALUES(?,?,0,?,'baseline')`, todayStr(), p.ID, conf); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Printf("event piece baseline id=%d confidence=%d", p.ID, conf)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// valuedPieceIDs returns the pieces that already carry a valuation:
+// real study time, a rated confidence, or a baseline declaration.
+func (a *App) valuedPieceIDs() (map[int64]bool, error) {
+	rows, err := a.db.Query(`SELECT DISTINCT piece_id FROM sessions
+		WHERE minutes>0 OR confidence>0 OR note='baseline'`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]bool{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
+	}
+	return out, rows.Err()
 }
 
 func (a *App) handleSetPriority(w http.ResponseWriter, r *http.Request) {

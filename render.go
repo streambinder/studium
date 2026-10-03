@@ -54,6 +54,9 @@ func confLabel(conf float64, rated bool) string {
 	if !rated {
 		return "mai valutata"
 	}
+	if conf < 1 {
+		return "mai toccato"
+	}
 	return fmt.Sprintf("%.0f/5", conf)
 }
 

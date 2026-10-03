@@ -50,3 +50,38 @@ func TestTodayManualSessionWithoutAvailability(t *testing.T) {
 		t.Fatal("done count text missing")
 	}
 }
+
+func TestTodayZeroMinuteValuationDoesNotCountAsStudied(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Haydn', 'Concerto', 'concerto', 3)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`); err != nil {
+		t.Fatal(err)
+	}
+	today := todayStr()
+	if _, err := db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES(?, 1, 0, 4, 'baseline')`, today); err != nil {
+		t.Fatal(err)
+	}
+	a := &App{db: db}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	a.handleToday(rec, req)
+	body := rec.Body.String()
+	if strings.Contains(body, "Completati") {
+		t.Fatal("a zero-minute valuation must not appear among the completed pieces")
+	}
+	if strings.Contains(body, "Da dove parti?") {
+		t.Fatal("a valued piece must not stay in the baseline gate")
+	}
+}

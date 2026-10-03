@@ -41,8 +41,9 @@
 {{if .Tempo.Valid}}<span class="badge kind">metronomo {{.Tempo.Int64}}</span>{{end}}
 {{if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{end}}
 {{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{end}}
+{{if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{end}}
 </div>
-{{if and (ne .Note "rimandato") (ne .Note "saltato") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
+{{if and (ne .Note "rimandato") (ne .Note "saltato") (ne .Note "baseline") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
 </article>
 {{else}}
 <p class="empty">Nessuna seduta per questo pezzo.</p>

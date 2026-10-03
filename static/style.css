@@ -1459,6 +1459,15 @@ a:hover {
   color: var(--accent-deep);
 }
 
+.base-card.saved {
+  opacity: 0.55;
+}
+
+.empty-note {
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
 .ptile span {
   font-size: clamp(8px, 12cqw, 1rem);
   font-weight: 500;
