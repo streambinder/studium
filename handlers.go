@@ -498,6 +498,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 				for _, c := range stamped.Concorsi {
 					if c.ID == data.Items[i].Upcoming[ui].ID {
 						data.Items[i].Upcoming[ui].Level = c.Level
+						data.Items[i].Upcoming[ui].Prep = c.Prep
 					}
 				}
 			}
@@ -926,13 +927,14 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 			Links:     nl,
 		})
 	}
-	levels, err := a.concorsoLevels()
+	levels, means, err := a.concorsoPrepStats()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	for i := range rows {
 		rows[i].Level = levels[rows[i].ID]
+		rows[i].Prep = means[rows[i].ID]
 	}
 	a.render(w, "concorsi.html", concorsiData{Title: "Concorsi", Nav: "concorsi", Rows: rows, Today: today})
 }
@@ -1097,12 +1099,13 @@ func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		levels, err := a.concorsoLevels()
+		levels, means, err := a.concorsoPrepStats()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		c.Level = levels[c.ID]
+		c.Prep = means[c.ID]
 	}
 	filter := map[int64]bool{c.ID: true}
 	today := todayStr()
@@ -1208,7 +1211,8 @@ type concorsoChip struct {
 	Archived bool
 	Selected bool
 	Href     string
-	Level    int // mean preparation level 0..4 of the concorso
+	Level    int     // mean preparation level 0..4 of the concorso
+	Prep     float64 // mean preparation score 0..1 of the concorso
 }
 
 // parseConcorsoFilter reads the ?c=1,2 map-filter selection.
@@ -1270,7 +1274,7 @@ func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	chips := make([]concorsoChip, 0, len(concorsi))
-	chipLevels, err := a.concorsoLevels()
+	chipLevels, chipMeans, err := a.concorsoPrepStats()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1285,7 +1289,7 @@ func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 		} else {
 			next[c.ID] = true
 		}
-		chips = append(chips, concorsoChip{ID: c.ID, Name: c.Name, Archived: c.Archived, Selected: valid[c.ID], Href: concorsoFilterHref(next), Level: chipLevels[c.ID]})
+		chips = append(chips, concorsoChip{ID: c.ID, Name: c.Name, Archived: c.Archived, Selected: valid[c.ID], Href: concorsoFilterHref(next), Level: chipLevels[c.ID], Prep: chipMeans[c.ID]})
 	}
 	var filter map[int64]bool
 	if len(valid) > 0 {
@@ -1309,7 +1313,8 @@ type giornoPiece struct {
 	Title    string
 	Movement string
 	Minutes  int
-	Level    int // preparation level 0..4 of the piece
+	Level    int     // preparation level 0..4 of the piece
+	Prep     float64 // preparation score 0..1 of the piece
 	Sessions []Session
 }
 
@@ -1335,8 +1340,10 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pieceLevel := make(map[int64]int, len(tiles))
+	piecePrep := make(map[int64]float64, len(tiles))
 	for _, t := range tiles {
 		pieceLevel[t.PieceID] = t.Level
+		piecePrep[t.PieceID] = t.Prep
 	}
 	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note, s.tempo,
 		p.id, p.composer, p.work, p.movement
@@ -1361,7 +1368,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		idx, seen := byKey[s.PieceID]
 		if !seen {
 			title := composer + " — " + work
-			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement, Level: pieceLevel[s.PieceID]})
+			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement, Level: pieceLevel[s.PieceID], Prep: piecePrep[s.PieceID]})
 			idx = len(data.Entries) - 1
 			byKey[s.PieceID] = idx
 		}

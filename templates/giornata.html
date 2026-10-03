@@ -8,7 +8,7 @@
 <div class="stack">
 {{range .Entries}}
 <article class="card reveal">
-<span class="prep-dot prep-dot-corner lv{{.Level}}" title="Preparazione {{.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.PieceID}}">{{.Title}}</a></strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
 </div>

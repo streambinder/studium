@@ -15,8 +15,9 @@ type Concorso struct {
 	Date     string // YYYY-MM-DD
 	Weight   int
 	Archived bool
-	Estratto string // per-link excerpt, set only when read through piece_concorso
-	Level    int    // mean preparation level 0..4 of its pieces, stamped on demand
+	Estratto string  // per-link excerpt, set only when read through piece_concorso
+	Level    int     // mean preparation level 0..4 of its pieces, stamped on demand
+	Prep     float64 // mean preparation score 0..1 of its pieces, stamped on demand
 }
 
 // Piece kinds.
@@ -34,8 +35,9 @@ type Piece struct {
 	Difficulty int    // 1..5, user-calibrated; drives the prep-map tile size
 	Archived   bool
 	Concorsi   []Concorso
-	HasActive  bool // at least one non-archived concorso with date >= today
-	Level      int  // preparation level 0..4, stamped on demand (not persisted)
+	HasActive  bool    // at least one non-archived concorso with date >= today
+	Level      int     // preparation level 0..4, stamped on demand (not persisted)
+	Prep       float64 // preparation score 0..1, stamped on demand (not persisted)
 }
 
 type Session struct {

@@ -54,13 +54,22 @@ func TestStampPrepLevels(t *testing.T) {
 	if bach.Level < 3 {
 		t.Fatalf("fresh strong piece: want level >= 3, got %d", bach.Level)
 	}
+	if bach.Prep < 0.5 {
+		t.Fatalf("fresh strong piece: want prep >= 0.5, got %v", bach.Prep)
+	}
 	if haydn.Level != 0 {
 		t.Fatalf("never practiced: want level 0, got %d", haydn.Level)
+	}
+	if haydn.Prep != 0 {
+		t.Fatalf("never practiced: want prep 0, got %v", haydn.Prep)
 	}
 	if len(bach.Concorsi) != 1 {
 		t.Fatalf("want 1 concorso on piece, got %d", len(bach.Concorsi))
 	}
 	if bach.Concorsi[0].Level < 1 || bach.Concorsi[0].Level > bach.Level {
 		t.Fatalf("concorso mean level should be between the extremes, got %d", bach.Concorsi[0].Level)
+	}
+	if bach.Concorsi[0].Prep <= 0 || bach.Concorsi[0].Prep >= bach.Prep {
+		t.Fatalf("concorso mean prep should be the average of its pieces, got %v", bach.Concorsi[0].Prep)
 	}
 }

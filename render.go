@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"math"
 	"net/http"
 	"strings"
 	"time"
 )
+
+// pct renders a 0..1 score as a rounded percentage number.
+func pct(score float64) int {
+	return int(math.Round(score * 100))
+}
 
 //go:embed templates/*.html
 var tmplFS embed.FS
@@ -66,6 +72,7 @@ func sinceLabel(since int, never bool) string {
 func tmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"f1":         f1,
+		"pct":        pct,
 		"hhmm":       hhmm,
 		"dateIT":     dateIT,
 		"confLabel":  confLabel,

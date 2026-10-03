@@ -1,10 +1,10 @@
 {{define "content"}}
 <div class="page-head">
 <span class="overline">Scheda pezzo</span>
-<h1><span class="prep-dot title-dot lv{{.Piece.Level}}" title="Preparazione {{.Piece.Level}}/4"></span>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">archiviato</span>{{end}}</h1>
+<h1><span class="prep-pin pin-title" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">archiviato</span>{{end}}</h1>
 {{if .Piece.Movement}}<p class="piece-subtitle">{{.Piece.Movement}}</p>{{end}}
 <div class="concorso-rows">
-{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></span>{{if .Estratto}}<span class="meta">{{.Estratto}}</span>{{end}}</div>
+{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{if .Estratto}}<span class="meta">{{.Estratto}}</span>{{end}}</div>
 {{else}}<p class="meta">Nessun concorso collegato.</p>{{end}}
 </div>
 <div class="row btns">

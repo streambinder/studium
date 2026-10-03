@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="page-head">
 <span class="overline">Concorso</span>
-<h1><span class="prep-dot title-dot lv{{.Concorso.Level}}" title="Preparazione media {{.Concorso.Level}}/4"></span>{{.Concorso.Name}}{{if .Concorso.Archived}} <span class="badge muted">archiviato</span>{{else if .Concluded}} <span class="badge done">concluso</span>{{end}}</h1>
+<h1><span class="prep-pin pin-title" tabindex="0" aria-label="Preparazione {{pct .Concorso.Prep}}%"><span class="prep-dot lv{{.Concorso.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Concorso.Prep}}%</span></span>{{.Concorso.Name}}{{if .Concorso.Archived}} <span class="badge muted">archiviato</span>{{else if .Concluded}} <span class="badge done">concluso</span>{{end}}</h1>
 <p class="meta">Prova: {{dateIT .Concorso.Date}} · Priorità {{.Concorso.Weight}}/5 · {{len .Pieces}} pezzi collegati · {{len .Links}} risors{{if eq (len .Links) 1}}a{{else}}e{{end}}</p>
 <div class="row btns">
 {{if not .Concorso.Archived}}<a class="btn" href="/concorsi/{{.Concorso.ID}}/modifica">Modifica</a>{{end}}
@@ -54,7 +54,7 @@
 <div class="stack">
 {{range .Pieces}}
 <article class="card reveal">
-<span class="prep-dot prep-dot-corner lv{{.Level}}" title="Preparazione {{.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
 {{$e := ""}}{{range .Concorsi}}{{if eq .ID $.Concorso.ID}}{{$e = .Estratto}}{{end}}{{end}}{{if $e}}<div class="meta">{{$e}}</div>{{end}}

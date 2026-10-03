@@ -73,13 +73,13 @@
 {{range .Items}}{{if not .Practiced}}
 <article class="card plan-card reveal">
 <span class="plan-rank" aria-hidden="true"></span>
-<span class="prep-dot prep-dot-corner lv{{.Piece.Level}}" title="Preparazione {{.Piece.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
 {{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
-{{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></span>{{end}}</div>{{end}}
+{{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
 <div class="slot">{{.Minutes}} min suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
 <div class="details-body">
@@ -120,23 +120,23 @@
 {{range .Items}}{{if .Practiced}}
 <article class="card plan-card done-card reveal">
 <span class="badge done done-corner">✓ {{.Logged}} min oggi</span>
-<span class="prep-dot prep-dot-corner lv{{.Piece.Level}}" title="Preparazione {{.Piece.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
-{{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></span>{{end}}</div>{{end}}
+{{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
 </article>
 {{end}}{{end}}
 {{range .ExtraDone}}
 <article class="card plan-card done-card reveal">
 <span class="badge done done-corner">✓ {{.Logged}} min oggi</span>
-<span class="prep-dot prep-dot-corner lv{{.P.Level}}" title="Preparazione {{.P.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{if .P.Movement}}<span>{{.P.Movement}}</span>{{end}}</div>
-{{if .P.Concorsi}}<div class="chips">{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></span>{{end}}</div>{{end}}
+{{if .P.Concorsi}}<div class="chips">{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
 </article>
 {{end}}
 </section>

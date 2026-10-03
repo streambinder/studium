@@ -544,7 +544,7 @@ h2 {
   opacity: 0.6;
 }
 
-/* Preparation dot: same palette as the map levels (.lv0–.lv4). */
+/* Preparation pin: map-palette dot (.lv0–.lv4) with a percentage tooltip. */
 .prep-dot {
   width: 0.62rem;
   height: 0.62rem;
@@ -554,27 +554,81 @@ h2 {
   display: inline-block;
 }
 
-.card > .prep-dot-corner {
+.prep-pin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Pins stay above the stretched card link so hover/tap reaches them. */
+.card .prep-pin {
+  z-index: 2;
+}
+
+.pin-tip {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: -0.5rem;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.34rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(2px);
+  pointer-events: none;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  z-index: 40;
+}
+
+.prep-pin:hover .pin-tip,
+.prep-pin:focus-visible .pin-tip,
+.prep-pin.open .pin-tip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.prep-pin.pin-corner {
   position: absolute;
   top: 0.95rem;
   right: 0.95rem;
 }
 
-.done-card > .prep-dot-corner {
+.done-card .prep-pin.pin-corner {
   top: 2.95rem;
 }
 
-h1 .title-dot {
+.prep-pin.pin-title {
+  vertical-align: 0.1em;
+  margin-right: 0.55rem;
+}
+
+.prep-pin.pin-title .prep-dot {
   width: 0.8rem;
   height: 0.8rem;
-  margin-right: 0.55rem;
-  vertical-align: 0.1em;
+}
+
+.prep-pin.pin-title .pin-tip {
+  right: auto;
+  left: -0.5rem;
+}
+
+.chip .prep-pin {
+  margin-left: 0.3rem;
 }
 
 .chip .prep-dot {
   width: 0.5rem;
   height: 0.5rem;
-  margin-left: 0.3rem;
 }
 
 .map-filters {

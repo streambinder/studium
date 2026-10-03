@@ -36,12 +36,12 @@ type prepSession struct {
 }
 
 // prepSessions returns all sessions for a piece, newest first.
-// concorsoLevels computes the mean preparation level (0..4) of every
-// concorso over all its active pieces.
-func (a *App) concorsoLevels() (map[int64]int, error) {
+// concorsoPrepStats computes the mean preparation of every concorso over
+// all its active pieces, as a 0..4 level and a 0..1 score.
+func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	scores := make(map[int64]float64, len(tiles))
 	for _, t := range tiles {
@@ -49,7 +49,7 @@ func (a *App) concorsoLevels() (map[int64]int, error) {
 	}
 	pieces, err := a.listPieces(0, "", false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	sums := map[int64]float64{}
 	counts := map[int64]int{}
@@ -59,11 +59,13 @@ func (a *App) concorsoLevels() (map[int64]int, error) {
 			counts[c.ID]++
 		}
 	}
-	out := make(map[int64]int, len(sums))
+	levels := make(map[int64]int, len(sums))
+	means := make(map[int64]float64, len(sums))
 	for id, sum := range sums {
-		out[id] = prepLevelFromScore(sum / float64(counts[id]))
+		means[id] = sum / float64(counts[id])
+		levels[id] = prepLevelFromScore(means[id])
 	}
-	return out, nil
+	return levels, means, nil
 }
 
 // stampPrepLevels fills Level on each piece and on its linked concorsi
@@ -92,13 +94,17 @@ func (a *App) stampPrepLevels(pieces []Piece) error {
 		}
 	}
 	levels := make(map[int64]int, len(sums))
+	means := make(map[int64]float64, len(sums))
 	for id, sum := range sums {
-		levels[id] = prepLevelFromScore(sum / float64(counts[id]))
+		means[id] = sum / float64(counts[id])
+		levels[id] = prepLevelFromScore(means[id])
 	}
 	for i := range pieces {
 		pieces[i].Level = byPiece[pieces[i].ID]
+		pieces[i].Prep = scores[pieces[i].ID]
 		for j := range pieces[i].Concorsi {
 			pieces[i].Concorsi[j].Level = levels[pieces[i].Concorsi[j].ID]
+			pieces[i].Concorsi[j].Prep = means[pieces[i].Concorsi[j].ID]
 		}
 	}
 	return nil

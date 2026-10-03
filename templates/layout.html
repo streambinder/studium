@@ -97,5 +97,19 @@
   });
 })();
 </script>
+<script>
+// Preparation pins: tap (mobile) toggles the percentage tooltip; a tap on
+// the pin inside a link chip shows the tooltip instead of navigating.
+document.addEventListener('click', function(e) {
+  var pin = e.target.closest('.prep-pin');
+  document.querySelectorAll('.prep-pin.open').forEach(function(p) {
+    if (p !== pin) p.classList.remove('open');
+  });
+  if (pin) {
+    pin.classList.toggle('open');
+    e.preventDefault();
+  }
+});
+</script>
 </body>
 </html>{{end}}

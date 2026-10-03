@@ -35,7 +35,7 @@
 <div class="stack">
 {{range .Rows}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
-<span class="prep-dot prep-dot-corner lv{{.Level}}" title="Preparazione media {{.Level}}/4"></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/concorsi/{{.ID}}">{{.Name}}</a></strong>
 {{if .Archived}}<span class="badge muted">archiviato</span>
