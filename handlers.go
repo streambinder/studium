@@ -28,6 +28,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /pezzi/{id}/modifica", a.handleEditPiece)
 	mux.HandleFunc("POST /pezzi/{id}/modifica", a.handleUpdatePiece)
 	mux.HandleFunc("POST /pezzi/{id}/difficolta", a.handleSetDifficulty)
+	mux.HandleFunc("POST /concorsi/{id}/priorita", a.handleSetPriority)
 	mux.HandleFunc("POST /pezzi/{id}/archivia", a.handleArchivePiece)
 	mux.HandleFunc("POST /pezzi/{id}/ripristina", a.handleRestorePiece)
 	mux.HandleFunc("GET /concorsi", a.handleConcorsi)
@@ -781,6 +782,28 @@ func (a *App) handleSetDifficulty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("event piece difficulty id=%d value=%d", id, d)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (a *App) handleSetPriority(w http.ResponseWriter, r *http.Request) {
+	id, ok := formID(w, r)
+	if !ok {
+		return
+	}
+	p, err := strconv.Atoi(r.FormValue("priority"))
+	if err != nil {
+		p = 1
+	}
+	res, err := a.db.Exec(`UPDATE concorsi SET weight=? WHERE id=?`, validWeight(p), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	log.Printf("event concorso priority id=%d value=%d", id, validWeight(p))
 	w.WriteHeader(http.StatusNoContent)
 }
 

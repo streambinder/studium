@@ -1,9 +1,8 @@
 {{define "content"}}
 <div class="page-head">
 <span class="overline">Concorso</span>
-<span class="prep-dot lv{{.Concorso.Level}}" title="Preparazione media {{.Concorso.Level}}/4"></span>
-<h1>{{.Concorso.Name}}{{if .Concorso.Archived}} <span class="badge muted">archiviato</span>{{else if .Concluded}} <span class="badge done">concluso</span>{{end}}</h1>
-<p class="meta">Prova: {{dateIT .Concorso.Date}} · Peso {{.Concorso.Weight}}/5 · {{len .Pieces}} pezzi collegati · {{len .Links}} risors{{if eq (len .Links) 1}}a{{else}}e{{end}}</p>
+<h1><span class="prep-dot title-dot lv{{.Concorso.Level}}" title="Preparazione media {{.Concorso.Level}}/4"></span>{{.Concorso.Name}}{{if .Concorso.Archived}} <span class="badge muted">archiviato</span>{{else if .Concluded}} <span class="badge done">concluso</span>{{end}}</h1>
+<p class="meta">Prova: {{dateIT .Concorso.Date}} · Priorità {{.Concorso.Weight}}/5 · {{len .Pieces}} pezzi collegati · {{len .Links}} risors{{if eq (len .Links) 1}}a{{else}}e{{end}}</p>
 <div class="row btns">
 {{if not .Concorso.Archived}}<a class="btn" href="/concorsi/{{.Concorso.ID}}/modifica">Modifica</a>{{end}}
 {{if .Concorso.Archived}}

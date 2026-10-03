@@ -85,7 +85,7 @@
 <div class="details-body">
 <ul>
 <li><strong>base {{f1 .Base}}</strong> — in {{len .Upcoming}} concors{{if gt (len .Upcoming) 1}}i{{else}}o{{end}}:
-{{range $i, $c := .Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (peso {{$c.Weight}}){{end}}</li>
+{{range $i, $c := .Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (priorità {{$c.Weight}}){{end}}</li>
 <li><strong>urgenza {{f1 .Urgency}}</strong> — prova più vicina tra {{.Days}} giorni ({{(index .Upcoming 0).Name}})</li>
 <li><strong>bisogno {{f1 .Need}}</strong> — confidenza {{confLabel .Conf .ConfRated}}</li>
 <li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>

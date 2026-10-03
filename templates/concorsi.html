@@ -2,7 +2,7 @@
 <div class="page-head">
 <span class="overline">Obiettivi</span>
 <h1>Concorsi</h1>
-<p class="meta">I pesi (1–5) entrano nella formula del piano giornaliero. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico. Tocca un concorso per aprirne il dettaglio.</p>
+<p class="meta">Le priorità (1–5) entrano nella formula del piano giornaliero. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico. Tocca un concorso per aprirne il dettaglio.</p>
 </div>
 
 <section class="panel reveal">
@@ -13,7 +13,7 @@
 </div>
 <div class="row">
 <label>Data prova <input type="date" name="date" required></label>
-<label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
+<label>Priorità <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 </div>
 <div class="row">
 <label>Link risorsa <input type="url" name="link_url" placeholder="https://… (bando, PDF passi)"></label>
@@ -42,9 +42,28 @@
 {{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
 </div>
 <div class="meta">{{dateIT .Date}}</div>
-<div class="diff-row"><label>Peso <input type="range" min="1" max="5" step="1" value="{{.Weight}}" disabled> <output>{{.Weight}}</output></label></div>
+<div class="diff-row"><label>Priorità <input type="range" class="prio-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Weight}}"> <output>{{.Weight}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 <div class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</div>
 </article>
 {{end}}
 </div>
+
+<script>
+document.querySelectorAll('.prio-slider').forEach(function(s) {
+  var out = s.parentElement.querySelector('output');
+  var state = s.parentElement.parentElement.querySelector('.diff-state');
+  s.addEventListener('input', function() { out.textContent = s.value; });
+  s.addEventListener('change', function() {
+    fetch('/concorsi/' + s.dataset.id + '/priorita', {
+      method: 'POST',
+      body: new URLSearchParams({priority: s.value})
+    }).then(function(r) {
+      state.textContent = r.ok ? '✓ salvato' : 'errore, riprova';
+      setTimeout(function() { state.textContent = ''; }, 1800);
+    }).catch(function() {
+      state.textContent = 'errore, riprova';
+    });
+  });
+});
+</script>
 {{end}}
