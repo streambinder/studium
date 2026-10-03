@@ -564,10 +564,11 @@ h2 {
   top: 2.95rem;
 }
 
-.page-head > .prep-dot {
-  position: absolute;
-  top: 0.35rem;
-  right: 0;
+h1 .title-dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.55rem;
+  vertical-align: 0.35em;
 }
 
 .chip .prep-dot {
