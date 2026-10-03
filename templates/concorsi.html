@@ -2,37 +2,7 @@
 <div class="page-head">
 <span class="overline">Obiettivi</span>
 <h1>Concorsi</h1>
-<p class="meta">I pesi (1–5) entrano nella formula del piano giornaliero: salvare ricalcola subito le priorità. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico.</p>
-</div>
-
-<div class="stack">
-{{range .Rows}}
-<article class="card reveal {{if .Archived}}archived{{end}}">
-<form id="concorso-{{.ID}}" method="post" action="/concorsi/{{.ID}}">
-<div class="card-head">
-{{if .Archived}}<span class="badge muted">archiviato</span>
-{{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
-<span class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</span>
-</div>
-<div class="row">
-<label>Nome <input type="text" name="name" value="{{.Name}}" required {{if .Archived}}disabled{{end}}></label>
-</div>
-<div class="row">
-<label>Data prova <input type="date" name="date" value="{{.Date}}" required {{if .Archived}}disabled{{end}}></label>
-<label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="{{.Weight}}" {{if .Archived}}disabled{{end}} oninput="this.nextElementSibling.textContent=this.value"> <output>{{.Weight}}</output></label>
-</div>
-</form>
-<div class="row btns">
-<a class="btn secondary" href="/concorsi/{{.ID}}">Dettaglio</a>
-{{if not .Archived}}<button type="submit" form="concorso-{{.ID}}">Salva</button>{{end}}
-{{if .Archived}}
-<form method="post" action="/concorsi/{{.ID}}/ripristina" class="inline"><button class="secondary" type="submit">Ripristina</button></form>
-{{else}}
-<form method="post" action="/concorsi/{{.ID}}/archivia" class="inline"><button class="secondary" type="submit">Archivia</button></form>
-{{end}}
-</div>
-</article>
-{{end}}
+<p class="meta">I pesi (1–5) entrano nella formula del piano giornaliero. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico. Tocca un concorso per aprirne il dettaglio.</p>
 </div>
 
 <section class="panel reveal">
@@ -61,4 +31,19 @@
 </form>
 <p class="meta">I link sono facoltativi: dal dettaglio del concorso potrai aggiungerne o rimuoverne altri in qualsiasi momento. I pezzi si collegano dalla pagina <a href="/pezzi">Pezzi</a> (modifica).</p>
 </section>
+
+<div class="stack">
+{{range .Rows}}
+<article class="card reveal {{if .Archived}}archived{{end}}">
+<div class="card-head">
+<strong><a class="card-link" href="/concorsi/{{.ID}}">{{.Name}}</a></strong>
+{{if .Archived}}<span class="badge muted">archiviato</span>
+{{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
+</div>
+<div class="meta">{{dateIT .Date}}</div>
+<div class="diff-row"><label>Peso <input type="range" min="1" max="5" step="1" value="{{.Weight}}" disabled> <output>{{.Weight}}</output></label></div>
+<div class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</div>
+</article>
+{{end}}
+</div>
 {{end}}

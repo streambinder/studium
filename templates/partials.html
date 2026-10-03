@@ -3,10 +3,12 @@
 <section class="panel reveal">
 <div class="section-head"><h2>Prontezza per concorso</h2></div>
 {{range .Readiness}}
+<a class="ready-link" href="/concorsi/{{.ID}}">
 <div class="ready-row">
 <div class="ready-head"><span class="ready-name">{{.Name}}</span><span class="meta">{{dateIT .Date}} · tra {{.Days}} giorn{{if eq .Days 1}}o{{else}}i{{end}} · {{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span><span class="ready-pct">{{.Pct}}%</span></div>
 <div class="budget-bar"><span style="--w: {{.Pct}}%"></span></div>
 </div>
+</a>
 {{end}}
 <p class="meta">Media dello stato di preparazione dei pezzi collegati a ciascun concorso.</p>
 </section>

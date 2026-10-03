@@ -1,0 +1,42 @@
+{{define "content"}}
+<div class="page-head">
+<span class="overline">Modifica concorso</span>
+<h1>{{.Concorso.Name}}</h1>
+</div>
+
+<section class="panel reveal">
+<form method="post" action="/concorsi/{{.Concorso.ID}}">
+<input type="hidden" name="ritorna" value="/concorsi/{{.Concorso.ID}}">
+<div class="row"><label>Nome <input type="text" name="name" value="{{.Concorso.Name}}" required></label></div>
+<div class="row">
+<label>Data prova <input type="date" name="date" value="{{.Concorso.Date}}" required></label>
+<label>Peso <input type="range" name="weight" min="1" max="5" step="1" value="{{.Concorso.Weight}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{.Concorso.Weight}}</output></label>
+</div>
+<div class="row btns"><button type="submit">Salva</button></div>
+</form>
+</section>
+
+<section>
+<div class="section-head"><h2>Link risorse</h2></div>
+{{if .Links}}
+<div class="stack">
+{{range .Links}}
+<article class="card reveal">
+<div class="card-head"><strong><a href="{{.URL}}" target="_blank" rel="noopener">{{.Label}} ↗</a></strong>
+<form method="post" action="/concorsi/{{$.Concorso.ID}}/link/{{.ID}}/elimina" class="inline"><button class="secondary" type="submit">Rimuovi</button></form>
+</div>
+<div class="meta">{{.URL}}</div>
+</article>
+{{end}}
+</div>
+{{else}}<p class="empty">Nessuna risorsa collegata.</p>{{end}}
+<form method="post" action="/concorsi/{{.Concorso.ID}}/link" class="panel reveal">
+<div class="row">
+<label>URL risorsa <input type="url" name="link_url" required placeholder="https://… (bando, PDF passi)"></label>
+<label>Etichetta <input type="text" name="link_label" placeholder="es. Bando di concorso"></label>
+</div>
+<div class="row btns"><button type="submit">Aggiungi link</button></div>
+</form>
+</section>
+<p><a href="/concorsi/{{.Concorso.ID}}">← torna al dettaglio</a></p>
+{{end}}

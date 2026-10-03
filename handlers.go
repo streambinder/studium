@@ -33,6 +33,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /concorsi", a.handleConcorsi)
 	mux.HandleFunc("POST /concorsi", a.handleAddConcorso)
 	mux.HandleFunc("GET /concorsi/{id}", a.handleConcorsoDetail)
+	mux.HandleFunc("GET /concorsi/{id}/modifica", a.handleConcorsoEdit)
 	mux.HandleFunc("POST /concorsi/{id}", a.handleUpdateConcorso)
 	mux.HandleFunc("POST /concorsi/{id}/link", a.handleAddConcorsoLink)
 	mux.HandleFunc("POST /concorsi/{id}/link/{linkID}/elimina", a.handleDeleteConcorsoLink)
@@ -209,6 +210,7 @@ type doneEntry struct {
 // readinessRow is one upcoming concorso with the mean preparation of
 // its linked active pieces, as a percentage.
 type readinessRow struct {
+	ID     int64
 	Name   string
 	Date   string
 	Days   int
@@ -253,7 +255,7 @@ func (a *App) concorsoReadiness(today string, pieces []Piece) ([]readinessRow, e
 			return nil, err
 		}
 		out = append(out, readinessRow{
-			Name: c.Name, Date: c.Date, Days: days, Pieces: n,
+			ID: c.ID, Name: c.Name, Date: c.Date, Days: days, Pieces: n,
 			Pct: int(sum / float64(n) * 100),
 		})
 	}
@@ -806,7 +808,7 @@ func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirec
 		http.NotFound(w, r)
 		return
 	}
-	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pezzi") || strings.HasPrefix(back, "/diario/pezzo/") {
+	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pezzi") || strings.HasPrefix(back, "/diario/pezzo/") || strings.HasPrefix(back, "/concorsi/") {
 		redirect = back
 	}
 	if _, err := a.db.Exec(query, id); err != nil {
@@ -999,12 +1001,14 @@ func formResourceLinks(w http.ResponseWriter, r *http.Request) ([]ConcorsoLink, 
 }
 
 type concorsoDetailData struct {
-	Title     string
-	Nav       string
-	Concorso  Concorso
-	Concluded bool
-	Links     []ConcorsoLink
-	Pieces    []Piece
+	Title         string
+	Nav           string
+	Concorso      Concorso
+	Concluded     bool
+	Links         []ConcorsoLink
+	Pieces        []Piece
+	PrepMap       []prepTile
+	PrepMapMobile []prepTile
 }
 
 func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
@@ -1022,10 +1026,47 @@ func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	filter := map[int64]bool{c.ID: true}
+	today := todayStr()
+	prep, err := a.prepTilesFor(today, prepBiasDesktop, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	prepMobile, err := a.prepTilesFor(today, prepBiasMobile, filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	a.render(w, "concorso_detail.html", concorsoDetailData{
 		Title: c.Name, Nav: "concorsi", Concorso: c,
 		Concluded: !c.Archived && c.Date < todayStr(),
 		Links:     links, Pieces: pieces,
+		PrepMap: prep, PrepMapMobile: prepMobile,
+	})
+}
+
+type concorsoFormData struct {
+	Title    string
+	Nav      string
+	Concorso Concorso
+	Links    []ConcorsoLink
+}
+
+// handleConcorsoEdit renders the concorso edit panel (fields + resource
+// links), mirroring the piece edit page.
+func (a *App) handleConcorsoEdit(w http.ResponseWriter, r *http.Request) {
+	c, ok := a.concorsoOr404(w, r)
+	if !ok {
+		return
+	}
+	links, err := a.concorsoLinks(c.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	a.render(w, "concorso_form.html", concorsoFormData{
+		Title: "Modifica concorso", Nav: "concorsi", Concorso: c, Links: links,
 	})
 }
 
@@ -1053,7 +1094,7 @@ func (a *App) handleAddConcorsoLink(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	log.Printf("event concorso link added concorso=%d", c.ID)
-	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10), http.StatusSeeOther)
+	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10)+"/modifica", http.StatusSeeOther)
 }
 
 func (a *App) handleDeleteConcorsoLink(w http.ResponseWriter, r *http.Request) {
@@ -1071,7 +1112,7 @@ func (a *App) handleDeleteConcorsoLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("event concorso link removed concorso=%d link=%d", c.ID, linkID)
-	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10), http.StatusSeeOther)
+	http.Redirect(w, r, "/concorsi/"+strconv.FormatInt(c.ID, 10)+"/modifica", http.StatusSeeOther)
 }
 
 // ---------- diario ----------

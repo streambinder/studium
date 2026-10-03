@@ -5,6 +5,29 @@
 <p class="meta">{{len .Pieces}} pezzi · i pesi dei concorsi guidano il piano giornaliero</p>
 </div>
 
+<section class="panel reveal">
+<div class="section-head"><h2>Aggiungi un pezzo</h2></div>
+<form method="post" action="/pezzi">
+<div class="row">
+<label>Compositore <input type="text" name="composer" required></label>
+<label>Opera <input type="text" name="work" required></label>
+</div>
+<div class="row">
+<label>Movimento <input type="text" name="movement" placeholder="es. II mov. Andante"></label>
+<label>Tipo
+<select name="kind">
+<option value="passo">passo d'orchestra</option>
+<option value="solo">solistico</option>
+</select></label>
+</div>
+<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
+<fieldset><legend>Concorsi</legend>
+{{range .Concorsi}}<div class="link-estratto"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="estratto-{{.ID}}" placeholder="estratto per questo concorso"></div>{{end}}
+</fieldset>
+<button type="submit">Aggiungi</button>
+</form>
+</section>
+
 <form method="get" action="/pezzi" class="filters panel reveal">
 <label>Concorso
 <select name="concorso" onchange="this.form.submit()">
@@ -39,28 +62,6 @@
 {{end}}
 </div>
 
-<section class="panel reveal">
-<div class="section-head"><h2>Aggiungi un pezzo</h2></div>
-<form method="post" action="/pezzi">
-<div class="row">
-<label>Compositore <input type="text" name="composer" required></label>
-<label>Opera <input type="text" name="work" required></label>
-</div>
-<div class="row">
-<label>Movimento <input type="text" name="movement" placeholder="es. II mov. Andante"></label>
-<label>Tipo
-<select name="kind">
-<option value="passo">passo d'orchestra</option>
-<option value="solo">solistico</option>
-</select></label>
-</div>
-<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
-<fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-estratto"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="estratto-{{.ID}}" placeholder="estratto per questo concorso"></div>{{end}}
-</fieldset>
-<button type="submit">Aggiungi</button>
-</form>
-</section>
 <script>
 document.querySelectorAll('.diff-slider').forEach(function(s) {
   var out = s.parentElement.querySelector('output');
