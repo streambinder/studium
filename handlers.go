@@ -475,6 +475,37 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	data.Pieces = pieces
+	// Preparation dots on plan pieces, extra pieces and concorso chips.
+	{
+		tmp := make([]Piece, 0, len(data.Items)+len(data.ExtraDone))
+		for _, it := range data.Items {
+			tmp = append(tmp, it.Piece)
+		}
+		for _, e := range data.ExtraDone {
+			tmp = append(tmp, e.P)
+		}
+		if err := a.stampPrepLevels(tmp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		k := 0
+		for i := range data.Items {
+			stamped := tmp[k]
+			k++
+			data.Items[i].Piece = stamped
+			for ui := range data.Items[i].Upcoming {
+				for _, c := range stamped.Concorsi {
+					if c.ID == data.Items[i].Upcoming[ui].ID {
+						data.Items[i].Upcoming[ui].Level = c.Level
+					}
+				}
+			}
+		}
+		for i := range data.ExtraDone {
+			data.ExtraDone[i].P = tmp[k]
+			k++
+		}
+	}
 	// Pieces practiced today outside the plan (recorded by hand) join
 	// the hero count and the Completati list.
 	inPlan := make(map[int64]bool, len(data.Items))
@@ -635,6 +666,10 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 	showArchived := r.URL.Query().Get("archiviati") == "1"
 	pieces, err := a.listPieces(concorsoID, kind, showArchived)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := a.stampPrepLevels(pieces); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -868,6 +903,14 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 			Links:     nl,
 		})
 	}
+	levels, err := a.concorsoLevels()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for i := range rows {
+		rows[i].Level = levels[rows[i].ID]
+	}
 	a.render(w, "concorsi.html", concorsiData{Title: "Concorsi", Nav: "concorsi", Rows: rows, Today: today})
 }
 
@@ -1026,6 +1069,18 @@ func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if err := a.stampPrepLevels(pieces); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	{
+		levels, err := a.concorsoLevels()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		c.Level = levels[c.ID]
+	}
 	filter := map[int64]bool{c.ID: true}
 	today := todayStr()
 	prep, err := a.prepTilesFor(today, prepBiasDesktop, filter)
@@ -1130,6 +1185,7 @@ type concorsoChip struct {
 	Archived bool
 	Selected bool
 	Href     string
+	Level    int // mean preparation level 0..4 of the concorso
 }
 
 // parseConcorsoFilter reads the ?c=1,2 map-filter selection.
@@ -1191,6 +1247,11 @@ func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	chips := make([]concorsoChip, 0, len(concorsi))
+	chipLevels, err := a.concorsoLevels()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	for _, c := range concorsi {
 		next := make(map[int64]bool, len(valid)+1)
 		for id := range valid {
@@ -1201,7 +1262,7 @@ func (a *App) handleDiario(w http.ResponseWriter, r *http.Request) {
 		} else {
 			next[c.ID] = true
 		}
-		chips = append(chips, concorsoChip{ID: c.ID, Name: c.Name, Archived: c.Archived, Selected: valid[c.ID], Href: concorsoFilterHref(next)})
+		chips = append(chips, concorsoChip{ID: c.ID, Name: c.Name, Archived: c.Archived, Selected: valid[c.ID], Href: concorsoFilterHref(next), Level: chipLevels[c.ID]})
 	}
 	var filter map[int64]bool
 	if len(valid) > 0 {
@@ -1225,6 +1286,7 @@ type giornoPiece struct {
 	Title    string
 	Movement string
 	Minutes  int
+	Level    int // preparation level 0..4 of the piece
 	Sessions []Session
 }
 
@@ -1243,6 +1305,15 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 	if _, err := time.Parse("2006-01-02", date); err != nil {
 		http.NotFound(w, r)
 		return
+	}
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	pieceLevel := make(map[int64]int, len(tiles))
+	for _, t := range tiles {
+		pieceLevel[t.PieceID] = t.Level
 	}
 	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note, s.tempo,
 		p.id, p.composer, p.work, p.movement
@@ -1267,7 +1338,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		idx, seen := byKey[s.PieceID]
 		if !seen {
 			title := composer + " — " + work
-			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement})
+			data.Entries = append(data.Entries, giornoPiece{PieceID: s.PieceID, Title: title, Movement: movement, Level: pieceLevel[s.PieceID]})
 			idx = len(data.Entries) - 1
 			byKey[s.PieceID] = idx
 		}
@@ -1347,6 +1418,12 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 			confs = append([]int{s.Confidence}, confs...)
 		}
 	}
+	stamped := []Piece{p}
+	if err := a.stampPrepLevels(stamped); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	p = stamped[0]
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
 		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(confs),
 	})

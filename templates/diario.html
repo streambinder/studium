@@ -8,7 +8,7 @@
 {{if .Chips}}
 <div class="chips map-filters">
 <a class="chip{{if .TuttiOn}} on{{end}}" href="/diario">Tutti</a>
-{{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}</a>{{end}}
+{{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></a>{{end}}
 </div>
 {{end}}
 {{if .PrepMap}}

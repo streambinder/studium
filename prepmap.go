@@ -36,6 +36,74 @@ type prepSession struct {
 }
 
 // prepSessions returns all sessions for a piece, newest first.
+// concorsoLevels computes the mean preparation level (0..4) of every
+// concorso over all its active pieces.
+func (a *App) concorsoLevels() (map[int64]int, error) {
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	if err != nil {
+		return nil, err
+	}
+	scores := make(map[int64]float64, len(tiles))
+	for _, t := range tiles {
+		scores[t.PieceID] = t.Prep
+	}
+	pieces, err := a.listPieces(0, "", false)
+	if err != nil {
+		return nil, err
+	}
+	sums := map[int64]float64{}
+	counts := map[int64]int{}
+	for _, p := range pieces {
+		for _, c := range p.Concorsi {
+			sums[c.ID] += scores[p.ID]
+			counts[c.ID]++
+		}
+	}
+	out := make(map[int64]int, len(sums))
+	for id, sum := range sums {
+		out[id] = prepLevelFromScore(sum / float64(counts[id]))
+	}
+	return out, nil
+}
+
+// stampPrepLevels fills Level on each piece and on its linked concorsi
+// with today's preparation levels, for cards and chips.
+func (a *App) stampPrepLevels(pieces []Piece) error {
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	if err != nil {
+		return err
+	}
+	byPiece := make(map[int64]int, len(tiles))
+	scores := make(map[int64]float64, len(tiles))
+	for _, t := range tiles {
+		byPiece[t.PieceID] = t.Level
+		scores[t.PieceID] = t.Prep
+	}
+	all, err := a.listPieces(0, "", false)
+	if err != nil {
+		return err
+	}
+	sums := map[int64]float64{}
+	counts := map[int64]int{}
+	for _, p := range all {
+		for _, c := range p.Concorsi {
+			sums[c.ID] += scores[p.ID]
+			counts[c.ID]++
+		}
+	}
+	levels := make(map[int64]int, len(sums))
+	for id, sum := range sums {
+		levels[id] = prepLevelFromScore(sum / float64(counts[id]))
+	}
+	for i := range pieces {
+		pieces[i].Level = byPiece[pieces[i].ID]
+		for j := range pieces[i].Concorsi {
+			pieces[i].Concorsi[j].Level = levels[pieces[i].Concorsi[j].ID]
+		}
+	}
+	return nil
+}
+
 // pieceInConcorsi reports whether p is linked to any selected concorso.
 func pieceInConcorsi(p Piece, selected map[int64]bool) bool {
 	for _, c := range p.Concorsi {
@@ -137,11 +205,24 @@ func prepScore(difficulty int, sessions []prepSession, today time.Time) (score f
 			}
 		}
 	}
-	level = 1 + int(score*3+0.5)
+	level = prepLevelFromScore(score)
 	if level > 4 {
 		level = 4
 	}
 	return score, level, avgConf, rated
+}
+
+// prepLevelFromScore quantizes a 0..1 preparation score into the 0..4
+// level shared by the map tiles and the preparation dots.
+func prepLevelFromScore(score float64) int {
+	if score <= 0 {
+		return 0
+	}
+	level := 1 + int(score*3+0.5)
+	if level > 4 {
+		level = 4
+	}
+	return level
 }
 
 // prepTiles builds the treemap tiles for every active piece, laid out

@@ -16,6 +16,7 @@ type Concorso struct {
 	Weight   int
 	Archived bool
 	Estratto string // per-link excerpt, set only when read through piece_concorso
+	Level    int    // mean preparation level 0..4 of its pieces, stamped on demand
 }
 
 // Piece kinds.
@@ -34,6 +35,7 @@ type Piece struct {
 	Archived   bool
 	Concorsi   []Concorso
 	HasActive  bool // at least one non-archived concorso with date >= today
+	Level      int  // preparation level 0..4, stamped on demand (not persisted)
 }
 
 type Session struct {

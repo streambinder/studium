@@ -46,6 +46,7 @@
 <div class="stack">
 {{range .Pieces}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
+<span class="prep-dot prep-dot-corner lv{{.Level}}" title="Preparazione {{.Level}}/4"></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong>
 {{if .Archived}}<span class="badge muted">archiviato</span>
@@ -53,7 +54,7 @@
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
 {{if .Concorsi}}<div class="chips">
-{{range $c := .Concorsi}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}</span>{{end}}
+{{range $c := .Concorsi}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}<span class="prep-dot lv{{$c.Level}}"></span></span>{{end}}
 </div>{{end}}
 <div class="diff-row"><label>Difficoltà <input type="range" class="diff-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Difficulty}}"> <output>{{.Difficulty}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 </article>

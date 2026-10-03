@@ -190,6 +190,7 @@ h2 {
 }
 
 .page-head {
+  position: relative;
   margin-bottom: 1.4rem;
 }
 
@@ -541,6 +542,38 @@ h2 {
 .chip.muted {
   color: var(--muted);
   opacity: 0.6;
+}
+
+/* Preparation dot: same palette as the map levels (.lv0–.lv4). */
+.prep-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(33, 28, 21, 0.22);
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+.card > .prep-dot-corner {
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+}
+
+.done-card > .prep-dot-corner {
+  top: 2.95rem;
+}
+
+.page-head > .prep-dot {
+  position: absolute;
+  top: 0.35rem;
+  right: 0;
+}
+
+.chip .prep-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.3rem;
 }
 
 .map-filters {

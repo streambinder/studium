@@ -8,6 +8,7 @@
 <div class="stack">
 {{range .Entries}}
 <article class="card reveal">
+<span class="prep-dot prep-dot-corner lv{{.Level}}" title="Preparazione {{.Level}}/4"></span>
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.PieceID}}">{{.Title}}</a></strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
 </div>

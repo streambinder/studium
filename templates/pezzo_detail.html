@@ -1,10 +1,11 @@
 {{define "content"}}
 <div class="page-head">
 <span class="overline">Scheda pezzo</span>
+<span class="prep-dot lv{{.Piece.Level}}" title="Preparazione {{.Piece.Level}}/4"></span>
 <h1>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">archiviato</span>{{end}}</h1>
 {{if .Piece.Movement}}<p class="piece-subtitle">{{.Piece.Movement}}</p>{{end}}
 <div class="concorso-rows">
-{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}</span>{{if .Estratto}}<span class="meta">{{.Estratto}}</span>{{end}}</div>
+{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-dot lv{{.Level}}"></span></span>{{if .Estratto}}<span class="meta">{{.Estratto}}</span>{{end}}</div>
 {{else}}<p class="meta">Nessun concorso collegato.</p>{{end}}
 </div>
 <div class="row btns">
