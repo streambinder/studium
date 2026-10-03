@@ -67,6 +67,17 @@ func (a *App) prepSessions(pieceID int64) ([]prepSession, error) {
 // prepScore maps a piece's session history to a 0..1 preparation score.
 // The user's confidence feedback weighs most; study volume (scaled by
 // difficulty) and recent activity complete the picture.
+// lastPracticedDay returns the most recent session date with a real
+// practice (markers such as skips do not count), or "" when none.
+func lastPracticedDay(sessions []prepSession) string {
+	for _, s := range sessions {
+		if s.Minutes > 0 || s.Confidence > 0 {
+			return s.Date
+		}
+	}
+	return ""
+}
+
 func prepScore(difficulty int, sessions []prepSession, today time.Time) (score float64, level int, avgConf float64, rated bool) {
 	if difficulty < 1 {
 		difficulty = 1
@@ -116,6 +127,15 @@ func prepScore(difficulty int, sessions []prepSession, today time.Time) (score f
 	}
 	if score > 1 {
 		score = 1
+	}
+	// Preparation decays once a piece has not been practiced for over a
+	// week: every further two weeks of neglect halve what remains.
+	if last := lastPracticedDay(sessions); last != "" {
+		if d, err := time.Parse("2006-01-02", last); err == nil {
+			if idle := int(today.Sub(d).Hours() / 24); idle > 7 {
+				score *= math.Pow(0.5, float64(idle-7)/14)
+			}
+		}
 	}
 	level = 1 + int(score*3+0.5)
 	if level > 4 {

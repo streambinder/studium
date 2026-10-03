@@ -23,6 +23,29 @@ func TestPrepScoreNoSessions(t *testing.T) {
 	}
 }
 
+func TestPrepScoreDecaysAfterAWeek(t *testing.T) {
+	sessions := mkSessions([3]any{"2026-09-29", 120, 5}, [3]any{"2026-09-28", 120, 5})
+	fresh, freshLv, _, _ := prepScore(3, sessions, time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))
+	withinGrace, _, _, _ := prepScore(3, sessions, time.Date(2026, 10, 6, 0, 0, 0, 0, time.UTC))
+	if withinGrace != fresh {
+		t.Fatalf("within a week no decay expected: fresh=%v grace=%v", fresh, withinGrace)
+	}
+	// Last practice 2026-09-29; on 2026-10-20 the piece is 21 days idle:
+	// 7 grace days + 14 decay days → the score must be about halved.
+	stale, staleLv, _, _ := prepScore(3, sessions, time.Date(2026, 10, 20, 0, 0, 0, 0, time.UTC))
+	if stale <= 0 || stale > fresh*0.6 {
+		t.Fatalf("want stale ≈ half of fresh (%v), got %v", fresh, stale)
+	}
+	if staleLv >= freshLv {
+		t.Fatalf("level should drop with decay: fresh=%d stale=%d", freshLv, staleLv)
+	}
+	// Skip markers do not reset the decay clock.
+	withSkip := append(mkSessions([3]any{"2026-10-19", 0, 0}), sessions...)
+	if got := lastPracticedDay(withSkip); got != "2026-09-29" {
+		t.Fatalf("skip marker must not count as practice: got %v", got)
+	}
+}
+
 func TestPrepScoreConfidenceDominates(t *testing.T) {
 	today := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
 	// Same volume, different user feedback: confidence must drive the level.
