@@ -511,6 +511,35 @@ h2 {
   font-size: 0.9rem;
 }
 
+.res-card .card-head strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.res-url {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.res-pre {
+  flex: none;
+}
+
+.res-tail {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  direction: rtl;
+  text-align: left;
+}
+
+.res-tail > span {
+  white-space: nowrap;
+}
+
 .movement-row {
   display: flex;
   align-items: center;

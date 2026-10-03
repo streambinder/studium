@@ -18,9 +18,9 @@
 <div class="section-head"><h2>Risorse</h2></div>
 <div class="stack">
 {{range .Links}}
-<article class="card reveal">
+<article class="card reveal res-card">
 <div class="card-head"><strong><a href="{{.URL}}" target="_blank" rel="noopener">{{.Label}} ↗</a></strong></div>
-<div class="meta">{{.URL}}</div>
+{{$p := urlParts .URL}}<div class="meta res-url">{{if $p.Tail}}<span class="res-pre">{{$p.Head}}/…/</span><span class="res-tail"><span>{{$p.Tail}}</span></span>{{else}}<span class="res-pre">{{$p.Head}}</span>{{end}}</div>
 </article>
 {{end}}
 </div>

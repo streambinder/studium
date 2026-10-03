@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -69,10 +70,27 @@ func sinceLabel(since int, never bool) string {
 	return fmt.Sprintf("%d giorni fa", since)
 }
 
+// urlSplit holds the two renderable halves of a resource URL.
+type urlSplit struct{ Head, Tail string }
+
+// urlParts splits a URL into its scheme://host head and the remaining tail,
+// so templates can render it on one line keeping the end visible.
+// Unparseable or host-less URLs come back whole as the head.
+func urlParts(raw string) urlSplit {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return urlSplit{Head: raw}
+	}
+	head := u.Scheme + "://" + u.Host
+	tail := strings.TrimPrefix(raw, head)
+	return urlSplit{Head: head, Tail: strings.TrimPrefix(tail, "/")}
+}
+
 func tmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"f1":         f1,
 		"pct":        pct,
+		"urlParts":   urlParts,
 		"hhmm":       hhmm,
 		"dateIT":     dateIT,
 		"confLabel":  confLabel,
