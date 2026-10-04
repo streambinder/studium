@@ -1035,8 +1035,12 @@ button.secondary:hover,
 }
 
 /* Armed skip mirrors the primary button, so confirming reads as the
-   same control recolored; the transparent border keeps the exact box. */
-.skip-btn.armed {
+   same control recolored; the transparent border keeps the exact box.
+   Every state is listed so the secondary hover wash never wins. */
+.skip-btn.armed,
+.skip-btn.armed:hover,
+.skip-btn.armed:active,
+.skip-btn.armed:focus-visible {
   background: linear-gradient(
     135deg,
     var(--accent-deep),
