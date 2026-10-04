@@ -1034,6 +1034,8 @@ button.secondary:hover,
   filter: none;
 }
 
+/* Armed skip mirrors the primary button, so confirming reads as the
+   same control recolored; the transparent border keeps the exact box. */
 .skip-btn.armed {
   background: linear-gradient(
     135deg,
@@ -1042,7 +1044,19 @@ button.secondary:hover,
     var(--accent-bright)
   );
   color: #fff;
-  border-color: transparent;
+  border: 1.5px solid transparent;
+  box-shadow: 0 6px 18px -8px rgba(138, 90, 46, 0.7);
+}
+
+.skip-btn.armed:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 24px -8px rgba(138, 90, 46, 0.75);
+}
+
+.skip-btn.armed:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 3px 10px -6px rgba(138, 90, 46, 0.7);
 }
 
 button.link {
@@ -1146,6 +1160,12 @@ input[type="checkbox"] {
 
 .row.btns > * {
   flex: 1 1 auto;
+}
+
+/* Check-in buttons split the row evenly, so the skip button keeps its
+   size when its label changes to ask for confirmation. */
+.checkin .row.btns > button {
+  flex: 1 1 0;
 }
 
 .row.btns > form {
