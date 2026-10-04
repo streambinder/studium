@@ -172,11 +172,11 @@ func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
 		t.Fatalf("want pieces 1 and 2 to survive, got %+v", got)
 	}
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=3 AND note='saltato'`).Scan(&n); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=3 AND note='auto-saltato'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 1 {
-		t.Fatalf("want one saltato marker for piece 3, got %d", n)
+		t.Fatalf("want one auto-saltato marker for piece 3, got %d", n)
 	}
 	// With almost no time left, everything unpracticed is trimmed.
 	got, err = a.autoSkipOverflow(got, 1, "2026-10-02")

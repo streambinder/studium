@@ -385,8 +385,9 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 
 // autoSkipOverflow drops the plan pieces that no longer fit today's
 // remaining time, least urgent first: unpracticed pieces whose summed
-// suggested minutes exceed what is left are marked 'saltato' for
-// today, so they leave the plan with a trace in the diary.
+// suggested minutes exceed what is left leave the plan with an
+// 'auto-saltato' trace in the diary. Unlike a manual skip, the marker
+// never excludes the piece: add time later in the day and it is back.
 func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([]planItem, error) {
 	sum := 0
 	for _, it := range items {
@@ -406,7 +407,10 @@ func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([
 			break
 		}
 		if _, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
-			VALUES(?,?,0,0,'saltato')`, today, items[victim].Piece.ID); err != nil {
+			SELECT ?,?,0,0,'auto-saltato'
+			WHERE NOT EXISTS (SELECT 1 FROM sessions
+				WHERE date=? AND piece_id=? AND note='auto-saltato')`,
+			today, items[victim].Piece.ID, today, items[victim].Piece.ID); err != nil {
 			return nil, err
 		}
 		log.Printf("event session auto-skipped piece=%d date=%s", items[victim].Piece.ID, today)

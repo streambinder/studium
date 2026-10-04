@@ -13,7 +13,7 @@
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
-{{range .Sessions}}<div class="meta session-line">{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{else if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{else if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{if gt .Confidence 0}} · confidenza {{.Confidence}}/5{{end}}{{else}}{{if gt .Minutes 0}}{{.Minutes}} min{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}confidenza {{.Confidence}}/5{{end}}{{if .Tempo.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}metronomo {{.Tempo.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .Tempo.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
+{{range .Sessions}}<div class="meta session-line">{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{else if eq .Note "auto-saltato"}}<span class="badge muted">saltato dal piano</span>{{else if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{else if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{if gt .Confidence 0}} · confidenza {{.Confidence}}/5{{end}}{{else}}{{if gt .Minutes 0}}{{.Minutes}} min{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}confidenza {{.Confidence}}/5{{end}}{{if .Tempo.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}metronomo {{.Tempo.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .Tempo.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
 </article>
 {{else}}
 <p class="empty">Nessuna seduta registrata in questa giornata.</p>
