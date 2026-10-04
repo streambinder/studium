@@ -160,7 +160,7 @@
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
 <div class="row btns">
 <button type="submit" formaction="/sessione">Registra</button>
-<button type="submit" formaction="/sessione/salta" class="secondary">Salta</button>
+<button type="submit" formaction="/sessione/salta" class="secondary skip-btn">Salta</button>
 </div>
 </form>
 </article>
@@ -265,5 +265,23 @@
     timers.push(paint);
   });
   if (timers.length) setInterval(function() { timers.forEach(function(p) { p(); }); }, 500);
+  // Salta asks for a second tap before submitting: the first tap only
+  // arms the button for a few seconds.
+  document.querySelectorAll('.skip-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      if (btn.dataset.armed) return;
+      e.preventDefault();
+      btn.dataset.armed = '1';
+      btn.dataset.label = btn.textContent;
+      btn.textContent = 'Confermi? Salta';
+      btn.classList.add('armed');
+      setTimeout(function() {
+        if (!btn.isConnected) return;
+        delete btn.dataset.armed;
+        btn.textContent = btn.dataset.label;
+        btn.classList.remove('armed');
+      }, 3000);
+    });
+  });
 })();</script>
 {{end}}

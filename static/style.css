@@ -1034,6 +1034,17 @@ button.secondary:hover,
   filter: none;
 }
 
+.skip-btn.armed {
+  background: linear-gradient(
+    135deg,
+    var(--accent-deep),
+    var(--accent) 60%,
+    var(--accent-bright)
+  );
+  color: #fff;
+  border-color: transparent;
+}
+
 button.link {
   background: none;
   border: none;
