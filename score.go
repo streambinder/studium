@@ -28,7 +28,8 @@ type ScoreBreakdown struct {
 	Urgency float64 // 1 + k·max(0, 1 − days/horizon)
 	Need    float64 // 1 + (5 − confidence)/5
 	Recency float64 // 1 + min(since/7, cap)
-	Score   float64 // base · urgency · need · recency
+	Rest    float64 // 0.5 when practiced yesterday, else 1
+	Score   float64 // base · urgency · need · recency · rest
 }
 
 // ComputeScore applies the daily-score formula. Weights must be non-empty:
@@ -41,12 +42,19 @@ func ComputeScore(in ScoreInput, c Coeffs) ScoreBreakdown {
 	urgency := 1 + c.UrgencyK*math.Max(0, 1-float64(in.Days)/c.UrgencyHorizon)
 	need := 1 + (5-in.Confidence)/5
 	recency := 1 + math.Min(float64(in.SinceDays)/7, c.RecencyCap)
-	score := base * urgency * need * recency
+	// A piece practiced yesterday rests: halving its score spreads the
+	// plan across the repertoire instead of drilling the same pieces.
+	rest := 1.0
+	if in.SinceDays == 1 {
+		rest = 0.5
+	}
+	score := base * urgency * need * recency * rest
 	return ScoreBreakdown{
 		Base:    base,
 		Urgency: urgency,
 		Need:    need,
 		Recency: recency,
+		Rest:    rest,
 		Score:   score,
 	}
 }

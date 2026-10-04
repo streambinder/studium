@@ -171,6 +171,7 @@ type planItem struct {
 	Urgency    float64
 	Need       float64
 	Recency    float64
+	Rest       float64
 	Score      float64
 	Conf       float64
 	ConfRated  bool
@@ -336,6 +337,7 @@ func (a *App) scorePiece(p Piece, today string, coeffs Coeffs) (item planItem, o
 		Urgency:    br.Urgency,
 		Need:       br.Need,
 		Recency:    br.Recency,
+		Rest:       br.Rest,
 		Score:      br.Score,
 		Conf:       conf,
 		ConfRated:  rated,

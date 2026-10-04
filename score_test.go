@@ -73,6 +73,26 @@ func TestComputeScoreRecency(t *testing.T) {
 	}
 }
 
+func TestComputeScoreRestPenalty(t *testing.T) {
+	c := DefaultCoeffs()
+	in := func(since int) ScoreInput {
+		return ScoreInput{Weights: []int{2}, Days: 30, Confidence: 2, SinceDays: since}
+	}
+	y := ComputeScore(in(1), c)
+	if !approxEq(y.Rest, 0.5) {
+		t.Fatalf("rest at 1 day = %v, want 0.5", y.Rest)
+	}
+	want := y.Base * y.Urgency * y.Need * y.Recency * 0.5
+	if !approxEq(y.Score, want) {
+		t.Fatalf("score = %v, want %v (halved)", y.Score, want)
+	}
+	for _, since := range []int{0, 2, 7, 30} {
+		if got := ComputeScore(in(since), c).Rest; !approxEq(got, 1) {
+			t.Fatalf("rest at %d days = %v, want 1", since, got)
+		}
+	}
+}
+
 func TestComputeScoreCustomCoeffs(t *testing.T) {
 	c := Coeffs{UrgencyK: 4, UrgencyHorizon: 30, RecencyCap: 0.5}
 	br := ComputeScore(ScoreInput{Weights: []int{1}, Days: 15, Confidence: 5, SinceDays: 14}, c)
