@@ -120,6 +120,7 @@
 {{else if not .Items}}
 <section class="panel reveal"><p class="empty">Nessun pezzo nel piano di oggi: concorsi conclusi, pezzi archiviati, oppure il tempo di studio di oggi è già esaurito. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
 {{else}}
+{{if .OpenCount}}
 <section>
 <div class="section-head"><h2>Il piano</h2><span class="meta">{{.OpenCount}} pezzi · in ordine di priorità</span></div>
 {{range .Items}}{{if not .Practiced}}
@@ -171,6 +172,7 @@
 {{end}}
 {{end}}
 {{end}}
+{{end}}
 {{if .DoneCount}}
 <section>
 <div class="section-head"><h2>Completati</h2><span class="meta">{{.DoneCount}} pezz{{if eq .DoneCount 1}}o{{else}}i{{end}} già in diario oggi</span></div>
@@ -193,6 +195,21 @@
 <strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{if .P.Movement}}<span>{{.P.Movement}}</span>{{end}}</div>
+{{if .P.Concorsi}}<div class="chips">{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
+</article>
+{{end}}
+</section>
+{{end}}
+{{if .Skipped}}
+<section>
+<div class="section-head"><h2>Saltati</h2><span class="meta">{{len .Skipped}} pezz{{if eq (len .Skipped) 1}}o{{else}}i{{end}} saltati oggi</span></div>
+{{range .Skipped}}
+<article class="card plan-card reveal">
+<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span>
+<div class="card-head">
+<strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
+</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{if .P.Movement}}<span>{{.P.Movement}}</span>{{end}}{{if .Auto}}<span class="badge muted">saltato dal piano</span>{{else}}<span class="badge muted">saltato</span>{{end}}</div>
 {{if .P.Concorsi}}<div class="chips">{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
 </article>
 {{end}}

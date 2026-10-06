@@ -200,10 +200,11 @@ type todayData struct {
 	DoneCount       int // pieces already practiced today, in and out of plan
 	PlanTotal       int // plan items plus pieces practiced outside the plan
 	ExtraDone       []doneEntry
-	Baseline        []Piece // active pieces still missing a starting valuation
-	BaselineDone    int     // pieces of upcoming concorsi already valued
-	BaselineTotal   int     // pieces of upcoming concorsi in scope for the valuation gate
-	Pieces          []Piece // all active pieces, for the manual session form
+	Skipped         []skippedEntry // pieces skipped today, by hand or by the plan
+	Baseline        []Piece        // active pieces still missing a starting valuation
+	BaselineDone    int            // pieces of upcoming concorsi already valued
+	BaselineTotal   int            // pieces of upcoming concorsi in scope for the valuation gate
+	Pieces          []Piece        // all active pieces, for the manual session form
 	Readiness       []readinessRow
 }
 
@@ -212,6 +213,13 @@ type todayData struct {
 type doneEntry struct {
 	P      Piece
 	Logged int
+}
+
+// skippedEntry is a piece skipped today: by hand from its plan card,
+// or dropped by the plan itself when time ran out (Auto).
+type skippedEntry struct {
+	P    Piece
+	Auto bool
 }
 
 // readinessRow is one upcoming concorso with the mean preparation of
@@ -797,6 +805,77 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 	if err := xrows.Err(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	// Pieces skipped today get their own section: explicit skips from
+	// the plan cards and pieces the plan itself dropped when time ran
+	// out. Anything already shown today stays out: an auto-skipped
+	// piece may be back in the plan after new availability, and a
+	// practiced one is among the Completati.
+	shown := make(map[int64]bool, len(data.Items)+len(data.ExtraDone))
+	for _, it := range data.Items {
+		shown[it.Piece.ID] = true
+	}
+	for _, e := range data.ExtraDone {
+		shown[e.P.ID] = true
+	}
+	srows, err := a.db.Query(`SELECT piece_id, note FROM sessions
+		WHERE date = ? AND note IN ('saltato', 'rimandato', 'auto-saltato')`, today)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer closeRowsLogged(srows)
+	auto := map[int64]bool{}
+	for srows.Next() {
+		var pid int64
+		var note string
+		if err := srows.Scan(&pid, &note); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if note == "auto-saltato" {
+			if _, seen := auto[pid]; !seen {
+				auto[pid] = true
+			}
+		} else {
+			auto[pid] = false // an explicit skip wins over the plan's marker
+		}
+	}
+	if err := srows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for pid, isAuto := range auto {
+		if shown[pid] {
+			continue
+		}
+		p, ok := byID[pid]
+		if !ok {
+			continue
+		}
+		data.Skipped = append(data.Skipped, skippedEntry{P: p, Auto: isAuto})
+	}
+	sort.Slice(data.Skipped, func(i, j int) bool {
+		if data.Skipped[i].Auto != data.Skipped[j].Auto {
+			return !data.Skipped[i].Auto // explicit skips first
+		}
+		if data.Skipped[i].P.Composer != data.Skipped[j].P.Composer {
+			return data.Skipped[i].P.Composer < data.Skipped[j].P.Composer
+		}
+		return data.Skipped[i].P.Work < data.Skipped[j].P.Work
+	})
+	if len(data.Skipped) > 0 {
+		tmp := make([]Piece, len(data.Skipped))
+		for i, e := range data.Skipped {
+			tmp[i] = e.P
+		}
+		if err := a.stampPrepLevels(tmp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for i := range data.Skipped {
+			data.Skipped[i].P = tmp[i]
+		}
 	}
 	data.PlanTotal = len(data.Items) + len(data.ExtraDone)
 	data.Readiness, err = a.concorsoReadiness(today, pieces)
