@@ -30,6 +30,25 @@
 </section>
 {{end}}
 
+<section class="panel reveal">
+<div class="section-head"><h2>Punteggio di oggi</h2>{{if .Score.HasUpcoming}}<span class="meta">{{f1 .Score.Score}}</span>{{end}}</div>
+{{if not .Score.HasUpcoming}}
+<p class="empty-note">Nessun concorso futuro collegato: questo pezzo non entra nel piano giornaliero.</p>
+{{else}}
+<ul>
+<li><strong>base {{f1 .Score.Base}}</strong> — in {{len .Score.Upcoming}} concors{{if gt (len .Score.Upcoming) 1}}i{{else}}o{{end}}:
+{{range $i, $c := .Score.Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (priorità {{$c.Weight}}){{end}}</li>
+<li><strong>urgenza {{f1 .Score.Urgency}}</strong> — prova più vicina tra {{.Score.Days}} giorni ({{(index .Score.Upcoming 0).Name}})</li>
+<li><strong>bisogno {{f1 .Score.Need}}</strong> — confidenza {{confLabel .Score.Conf .Score.ConfRated}}</li>
+<li><strong>ripresa {{f1 .Score.Recency}}</strong> — {{sinceLabel .Score.Since .Score.SinceNever}}</li>
+{{if lt .Score.Rest 1.0}}<li><strong>riposo ×{{f1 .Score.Rest}}</strong> — studiato ieri: oggi in secondo piano, spazio ad altri pezzi</li>{{end}}
+</ul>
+<p class="formula">punteggio = {{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
+{{if .Score.Skipped}}<p class="empty-note">Oggi è stato saltato: resta fuori dal piano di oggi.</p>
+{{else if .Score.Rank}}<p class="empty-note">Posizione {{.Score.Rank}} di {{.Score.Candidates}} per il piano di oggi: {{if .Score.InTop}}tra i primi 8, quelli proposti{{else}}fuori dai primi 8 proposti{{end}}.</p>{{end}}
+{{end}}
+</section>
+
 <section>
 <div class="section-head"><h2>Sedute</h2><span class="meta">{{len .Sessions}}</span></div>
 <div class="stack">

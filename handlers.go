@@ -293,7 +293,9 @@ func upcomingConcorsi(p Piece, today string) ([]Concorso, []int, int, error) {
 
 // scorePiece computes the daily plan item for one piece. ok=false means the
 // piece is excluded from today's plan (no upcoming concorso or skipped).
-func (a *App) scorePiece(p Piece, today string, coeffs Coeffs) (item planItem, ok bool, err error) {
+// With ignoreSkip the item is computed even when the piece is skipped
+// today, so callers can still show its would-be score.
+func (a *App) scorePiece(p Piece, today string, coeffs Coeffs, ignoreSkip bool) (item planItem, ok bool, err error) {
 	upcoming, weights, days, err := upcomingConcorsi(p, today)
 	if err != nil {
 		return planItem{}, false, err
@@ -305,7 +307,7 @@ func (a *App) scorePiece(p Piece, today string, coeffs Coeffs) (item planItem, o
 	if err != nil {
 		return planItem{}, false, err
 	}
-	if mark.Skipped {
+	if mark.Skipped && !ignoreSkip {
 		return planItem{}, false, nil
 	}
 	conf, rated, err := a.latestConfidence(p.ID)
@@ -359,7 +361,7 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	}
 	var items []planItem
 	for _, p := range pieces {
-		item, ok, err := a.scorePiece(p, today, coeffs)
+		item, ok, err := a.scorePiece(p, today, coeffs, false)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1472,6 +1474,18 @@ type pezzoDetailData struct {
 	Piece    Piece
 	Sessions []Session
 	Spark    sparkline
+	Score    pezzoScore
+}
+
+// pezzoScore is the piece's standing in today's plan scoring, shown on
+// the piece detail page with the same breakdown as the plan cards.
+type pezzoScore struct {
+	planItem
+	HasUpcoming bool
+	Skipped     bool
+	Rank        int // 1-based position among today's candidates, 0 when out
+	Candidates  int
+	InTop       bool // within the first 8, the ones the plan proposes
 }
 
 type sparkPoint struct {
@@ -1533,8 +1547,44 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p = stamped[0]
+	today := todayStr()
+	coeffs, err := a.getCoeffs()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	item, hasScore, err := a.scorePiece(p, today, coeffs, true)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	score := pezzoScore{HasUpcoming: hasScore}
+	if hasScore {
+		score.planItem = item
+		mark, err := a.todayMark(p.ID, today)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		score.Skipped = mark.Skipped
+		if !mark.Skipped {
+			items, _, err := a.buildPlan(today)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			score.Candidates = len(items)
+			for i, it := range items {
+				if it.Piece.ID == p.ID {
+					score.Rank = i + 1
+					score.InTop = score.Rank <= 8
+					break
+				}
+			}
+		}
+	}
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
-		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(confs),
+		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(confs), Score: score,
 	})
 }
 
