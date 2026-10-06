@@ -141,9 +141,10 @@
 <li><strong>urgenza {{f1 .Urgency}}</strong> — prova più vicina tra {{.Days}} giorni ({{(index .Upcoming 0).Name}})</li>
 <li><strong>bisogno {{f1 .Need}}</strong> — confidenza {{confLabel .Conf .ConfRated}}</li>
 <li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>
+{{if gt .Diff 1.0}}<li><strong>difficoltà ×{{f1 .Diff}}</strong> — difficoltà {{.Piece.Difficulty}}/5: i pezzi difficili partono prima e contano di più</li>{{end}}
 {{if lt .Rest 1.0}}<li><strong>riposo ×{{f1 .Rest}}</strong> — studiato ieri: oggi in secondo piano, spazio ad altri pezzi</li>{{end}}
 </ul>
-<p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}}{{if lt .Rest 1.0}} × {{f1 .Rest}}{{end}} = <strong>{{f1 .Score}}</strong></p>
+<p class="formula">punteggio = {{f1 .Base}} × {{f1 .Urgency}} × {{f1 .Need}} × {{f1 .Recency}}{{if gt .Diff 1.0}} × {{f1 .Diff}}{{end}}{{if lt .Rest 1.0}} × {{f1 .Rest}}{{end}} = <strong>{{f1 .Score}}</strong></p>
 </div>
 </details>
 <form method="post" class="checkin">

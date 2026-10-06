@@ -93,6 +93,34 @@ func TestComputeScoreRestPenalty(t *testing.T) {
 	}
 }
 
+func TestComputeScoreDifficulty(t *testing.T) {
+	c := DefaultCoeffs()
+	in := func(diff int) ScoreInput {
+		return ScoreInput{Weights: []int{5}, Days: 94, Confidence: 1, SinceDays: 30, Difficulty: diff}
+	}
+	easy := ComputeScore(in(1), c)
+	if !approxEq(easy.Urgency, 1) || !approxEq(easy.Diff, 1) {
+		t.Fatalf("difficulty 1 must be neutral, got urgency %v diff %v", easy.Urgency, easy.Diff)
+	}
+	hard := ComputeScore(in(5), c)
+	// Horizon widens to 60*(1+0.25*4) = 120 days, so at 94 days the
+	// ramp is already running; the multiplier is 1+0.075*4 = 1.3.
+	if want := 1 + 2*(1-94.0/120.0); !approxEq(hard.Urgency, want) {
+		t.Fatalf("difficulty 5 urgency = %v, want %v", hard.Urgency, want)
+	}
+	if !approxEq(hard.Diff, 1.3) {
+		t.Fatalf("difficulty 5 factor = %v, want 1.3", hard.Diff)
+	}
+	want := hard.Base * hard.Urgency * hard.Need * hard.Recency * hard.Diff
+	if !approxEq(hard.Score, want) {
+		t.Fatalf("difficulty 5 score = %v, want %v", hard.Score, want)
+	}
+	// Out-of-range difficulty counts as 1.
+	if got := ComputeScore(in(0), c); !approxEq(got.Score, easy.Score) {
+		t.Fatalf("difficulty 0 should behave as 1, got score %v want %v", got.Score, easy.Score)
+	}
+}
+
 func TestComputeScoreCustomCoeffs(t *testing.T) {
 	c := Coeffs{UrgencyK: 4, UrgencyHorizon: 30, RecencyCap: 0.5}
 	br := ComputeScore(ScoreInput{Weights: []int{1}, Days: 15, Confidence: 5, SinceDays: 14}, c)

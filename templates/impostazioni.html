@@ -26,6 +26,10 @@
 <label>Orizzonte urgenza in giorni <input type="number" name="urgency_horizon" step="1" min="1" value="{{.Coeffs.UrgencyHorizon}}" required></label>
 </div>
 <label>Tetto ripresa <input type="number" name="recency_cap" step="0.1" min="0.1" value="{{.Coeffs.RecencyCap}}" required></label>
+<div class="row">
+<label>Anticipo difficoltà (rampa per punto) <input type="number" name="diff_horizon" step="0.05" min="0.05" value="{{.Coeffs.DiffHorizon}}" required></label>
+<label>Peso difficoltà (moltiplicatore per punto) <input type="number" name="diff_boost" step="0.025" min="0.025" value="{{.Coeffs.DiffBoost}}" required></label>
+</div>
 <button type="submit">Salva</button>
 </form>
 </section>

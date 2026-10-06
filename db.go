@@ -542,6 +542,8 @@ func (a *App) getCoeffs() (Coeffs, error) {
 		"urgency_k":       &c.UrgencyK,
 		"urgency_horizon": &c.UrgencyHorizon,
 		"recency_cap":     &c.RecencyCap,
+		"diff_horizon":    &c.DiffHorizon,
+		"diff_boost":      &c.DiffBoost,
 	}
 	for k, p := range vals {
 		var s string
