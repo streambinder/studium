@@ -172,6 +172,7 @@ type planItem struct {
 	Need       float64
 	Recency    float64
 	Rest       float64
+	Diff       float64
 	Score      float64
 	Conf       float64
 	ConfRated  bool
@@ -330,6 +331,7 @@ func (a *App) scorePiece(p Piece, today string, coeffs Coeffs, ignoreSkip bool) 
 		Days:       days,
 		Confidence: conf,
 		SinceDays:  since,
+		Difficulty: p.Difficulty,
 	}, coeffs)
 	return planItem{
 		Piece:      p,
@@ -340,6 +342,7 @@ func (a *App) scorePiece(p Piece, today string, coeffs Coeffs, ignoreSkip bool) 
 		Need:       br.Need,
 		Recency:    br.Recency,
 		Rest:       br.Rest,
+		Diff:       br.Diff,
 		Score:      br.Score,
 		Conf:       conf,
 		ConfRated:  rated,
@@ -391,6 +394,7 @@ type forecastInput struct {
 	id       int64
 	concorsi []Concorso // linked, non-archived, still upcoming today
 	conf     float64
+	diff     int    // piece difficulty 1..5
 	last     string // last practiced date, "" when never practiced
 }
 
@@ -432,7 +436,7 @@ func (a *App) newPlanForecaster(today string) (*planForecaster, error) {
 		if err != nil {
 			return nil, err
 		}
-		f.inputs = append(f.inputs, forecastInput{id: p.ID, concorsi: upcoming, conf: conf, last: last})
+		f.inputs = append(f.inputs, forecastInput{id: p.ID, concorsi: upcoming, conf: conf, diff: p.Difficulty, last: last})
 	}
 	return f, nil
 }
@@ -475,6 +479,7 @@ func (f *planForecaster) scoreOn(in forecastInput, day string) (ScoreBreakdown, 
 		Days:       days,
 		Confidence: in.conf,
 		SinceDays:  since,
+		Difficulty: in.diff,
 	}, f.coeffs), true, nil
 }
 
@@ -1717,15 +1722,13 @@ type sparkGrid struct {
 // sparkline holds precomputed SVG coordinates; the template renders them
 // through html/template so nothing is ever injected as raw HTML.
 type sparkline struct {
-	Points     []sparkPoint
-	Grid       []sparkGrid // one row per confidence level, 1..5
-	First      string      // date of the oldest point
-	Last       string      // date of the newest point
-	FirstX     string
-	LastX      string
-	LastLabelY string // y of the current-value label above the last point
-	LastConf   int
-	Single     bool // a single point: one date label is enough
+	Points []sparkPoint
+	Grid   []sparkGrid // one row per confidence level, 1..5
+	First  string      // date of the oldest point
+	Last   string      // date of the newest point
+	FirstX string
+	LastX  string
+	Single bool // a single point: one date label is enough
 }
 
 // confPoint is one rated session feeding the sparkline, oldest first.
@@ -1736,7 +1739,7 @@ type confPoint struct {
 
 const (
 	sparkX0 = 26.0  // plot left edge, past the y labels
-	sparkX1 = 292.0 // plot right edge
+	sparkX1 = 712.0 // plot right edge (viewBox 740 wide, full section width)
 	sparkY1 = 86.0  // y of confidence 1 (bottom)
 	sparkY5 = 10.0  // y of confidence 5 (top)
 )
@@ -1768,13 +1771,7 @@ func buildSparkline(pts []confPoint) sparkline {
 	if n > 0 {
 		s.First, s.Last = pts[0].Date, pts[n-1].Date
 		s.FirstX = s.Points[0].X
-		last := s.Points[n-1]
-		s.LastX, s.LastConf = last.X, last.Conf
-		ly, _ := strconv.ParseFloat(last.Y, 64)
-		if ly -= 10; ly < 9 {
-			ly = 9
-		}
-		s.LastLabelY = strconv.FormatFloat(ly, 'f', 1, 64)
+		s.LastX = s.Points[n-1].X
 		s.Single = n == 1
 	}
 	return s
@@ -1900,6 +1897,8 @@ func (a *App) handleSaveImpostazioni(w http.ResponseWriter, r *http.Request) {
 		{"urgency_k", r.FormValue("urgency_k")},
 		{"urgency_horizon", r.FormValue("urgency_horizon")},
 		{"recency_cap", r.FormValue("recency_cap")},
+		{"diff_horizon", r.FormValue("diff_horizon")},
+		{"diff_boost", r.FormValue("diff_boost")},
 	} {
 		f, err := strconv.ParseFloat(kv.val, 64)
 		if err != nil || f <= 0 {

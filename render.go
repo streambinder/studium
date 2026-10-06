@@ -41,6 +41,15 @@ func dateIT(iso string) string {
 		weekdaysIT[t.Weekday()], t.Day(), monthsIT[int(t.Month())], t.Year())
 }
 
+// dateDMY renders an ISO date as dd/mm/yyyy, for compact axis labels.
+func dateDMY(iso string) string {
+	t, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return iso
+	}
+	return t.Format("02/01/2006")
+}
+
 func hhmm(mins int) string {
 	if mins < 0 {
 		return "—"
@@ -96,6 +105,7 @@ func tmplFuncs() template.FuncMap {
 		"urlParts":   urlParts,
 		"hhmm":       hhmm,
 		"dateIT":     dateIT,
+		"dateDMY":    dateDMY,
 		"confLabel":  confLabel,
 		"sinceLabel": sinceLabel,
 		"join":       strings.Join,

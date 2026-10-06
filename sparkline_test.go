@@ -17,11 +17,11 @@ func TestBuildSparkline(t *testing.T) {
 	if !s.Single || len(s.Points) != 1 {
 		t.Fatalf("single point: got %+v", s)
 	}
-	if s.Points[0].X != "159.0" || s.Points[0].Y != "86.0" {
+	if s.Points[0].X != "369.0" || s.Points[0].Y != "86.0" {
 		t.Fatalf("single point should sit centered at conf 1 height, got %s,%s", s.Points[0].X, s.Points[0].Y)
 	}
-	if s.First != "2026-10-03" || s.Last != "2026-10-03" || s.LastConf != 1 {
-		t.Fatalf("single point labels: got first=%q last=%q conf=%d", s.First, s.Last, s.LastConf)
+	if s.First != "2026-10-03" || s.Last != "2026-10-03" {
+		t.Fatalf("single point labels: got first=%q last=%q", s.First, s.Last)
 	}
 
 	s = buildSparkline([]confPoint{
@@ -29,17 +29,13 @@ func TestBuildSparkline(t *testing.T) {
 		{Date: "2026-09-15", Conf: 5},
 		{Date: "2026-10-01", Conf: 3},
 	})
-	if s.Points[0].X != "26.0" || s.Points[2].X != "292.0" {
+	if s.Points[0].X != "26.0" || s.Points[2].X != "712.0" {
 		t.Fatalf("points should span the plot, got %s..%s", s.Points[0].X, s.Points[2].X)
 	}
 	if s.Points[1].Y != "10.0" {
 		t.Fatalf("conf 5 should sit at the top, got y=%s", s.Points[1].Y)
 	}
-	if s.LastLabelY != "38.0" {
-		t.Fatalf("last value label should float above the last point, got %s", s.LastLabelY)
-	}
-	top := buildSparkline([]confPoint{{Date: "2026-10-01", Conf: 5}})
-	if top.LastLabelY != "9.0" {
-		t.Fatalf("last value label should clamp inside the viewbox, got %s", top.LastLabelY)
+	if s.FirstX != "26.0" || s.LastX != "712.0" {
+		t.Fatalf("date labels should center on their points, got %s..%s", s.FirstX, s.LastX)
 	}
 }

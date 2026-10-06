@@ -20,17 +20,16 @@
 {{if .Spark.Points}}
 <section class="panel reveal">
 <div class="section-head"><h2>Confidenza nel tempo</h2></div>
-<svg viewBox="0 0 300 118" class="spark" role="img" aria-label="andamento confidenza">
+<svg viewBox="0 0 740 118" class="spark" role="img" aria-label="andamento confidenza">
 <defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
 <stop offset="0" stop-color="#c99a5b"/><stop offset="1" stop-color="#8a5a2e"/>
 </linearGradient></defs>
-{{range .Spark.Grid}}<line x1="26" x2="292" y1="{{.Y}}" y2="{{.Y}}" class="spark-grid"/><text x="18" y="{{.Y}}" dy="3.5" text-anchor="end" class="spark-ylabel">{{.Label}}</text>{{end}}
+{{range .Spark.Grid}}<line x1="26" x2="712" y1="{{.Y}}" y2="{{.Y}}" class="spark-grid"/><text x="18" y="{{.Y}}" dy="3.5" text-anchor="end" class="spark-ylabel">{{.Label}}</text>{{end}}
 <line x1="26" x2="26" y1="10" y2="86" class="spark-axis"/>
 <polyline points="{{range $i, $p := .Spark.Points}}{{if $i}} {{end}}{{$p.X}},{{$p.Y}}{{end}}" fill="none" stroke-width="2"/>
 {{range .Spark.Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="4"><title>{{dateIT .Date}} — confidenza {{.Conf}}/5</title></circle>{{end}}
-<text x="{{.Spark.LastX}}" y="{{.Spark.LastLabelY}}" {{if .Spark.Single}}text-anchor="middle"{{else}}text-anchor="end"{{end}} class="spark-lastval">{{.Spark.LastConf}}/5</text>
-<text x="{{.Spark.FirstX}}" y="104" class="spark-xlabel">{{dateIT .Spark.First}}</text>
-{{if not .Spark.Single}}<text x="{{.Spark.LastX}}" y="104" text-anchor="end" class="spark-xlabel">{{dateIT .Spark.Last}}</text>{{end}}
+<text x="{{.Spark.FirstX}}" y="104" text-anchor="middle" class="spark-xlabel">{{dateDMY .Spark.First}}</text>
+{{if not .Spark.Single}}<text x="{{.Spark.LastX}}" y="104" text-anchor="middle" class="spark-xlabel">{{dateDMY .Spark.Last}}</text>{{end}}
 </svg>
 </section>
 {{end}}
@@ -46,9 +45,10 @@
 <li><strong>urgenza {{f1 .Score.Urgency}}</strong> — prova più vicina tra {{.Score.Days}} giorni ({{(index .Score.Upcoming 0).Name}})</li>
 <li><strong>bisogno {{f1 .Score.Need}}</strong> — confidenza {{confLabel .Score.Conf .Score.ConfRated}}</li>
 <li><strong>ripresa {{f1 .Score.Recency}}</strong> — {{sinceLabel .Score.Since .Score.SinceNever}}</li>
+{{if gt .Score.Diff 1.0}}<li><strong>difficoltà ×{{f1 .Score.Diff}}</strong> — difficoltà {{.Piece.Difficulty}}/5: i pezzi difficili partono prima e contano di più</li>{{end}}
 {{if lt .Score.Rest 1.0}}<li><strong>riposo ×{{f1 .Score.Rest}}</strong> — studiato ieri: oggi in secondo piano, spazio ad altri pezzi</li>{{end}}
 </ul>
-<p class="formula">punteggio = {{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
+<p class="formula">punteggio = {{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if gt .Score.Diff 1.0}} × {{f1 .Score.Diff}}{{end}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
 {{if .Score.Skipped}}<p class="empty-note">Oggi è stato saltato: resta fuori dal piano di oggi.</p>
 {{else if .Score.Rank}}<p class="empty-note">Posizione {{.Score.Rank}} di {{.Score.Candidates}} per il piano di oggi: {{if .Score.InTop}}tra i primi 8, quelli proposti{{else}}fuori dai primi 8 proposti{{end}}.</p>{{end}}
 {{if .Score.InTop}}<p class="empty-note">È già tra i pezzi proposti oggi.</p>
