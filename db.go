@@ -432,18 +432,31 @@ func (a *App) latestConfidence(pieceID int64) (conf float64, rated bool, err err
 	return float64(c.Int64), true, nil
 }
 
+// lastPracticeDate returns the most recent session date with real study
+// time for the piece, or "" when it was never practiced.
+func (a *App) lastPracticeDate(pieceID int64) (string, error) {
+	var d sql.NullString
+	err := a.db.QueryRow(`SELECT MAX(date) FROM sessions WHERE piece_id=? AND minutes>0`, pieceID).Scan(&d)
+	if err != nil {
+		return "", err
+	}
+	if !d.Valid {
+		return "", nil
+	}
+	return d.String, nil
+}
+
 // daysSincePractice returns days since the last session with minutes>0;
 // ok=false when the piece was never practiced (caller uses the default of 30).
 func (a *App) daysSincePractice(pieceID int64, today string) (days int, ok bool, err error) {
-	var d sql.NullString
-	err = a.db.QueryRow(`SELECT MAX(date) FROM sessions WHERE piece_id=? AND minutes>0`, pieceID).Scan(&d)
+	last, err := a.lastPracticeDate(pieceID)
 	if err != nil {
 		return 0, false, err
 	}
-	if !d.Valid {
+	if last == "" {
 		return 0, false, nil
 	}
-	n, err := daysBetween(d.String, today)
+	n, err := daysBetween(last, today)
 	if err != nil {
 		return 0, false, err
 	}

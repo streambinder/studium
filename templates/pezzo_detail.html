@@ -46,6 +46,9 @@
 <p class="formula">punteggio = {{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
 {{if .Score.Skipped}}<p class="empty-note">Oggi è stato saltato: resta fuori dal piano di oggi.</p>
 {{else if .Score.Rank}}<p class="empty-note">Posizione {{.Score.Rank}} di {{.Score.Candidates}} per il piano di oggi: {{if .Score.InTop}}tra i primi 8, quelli proposti{{else}}fuori dai primi 8 proposti{{end}}.</p>{{end}}
+{{if .Score.InTop}}<p class="empty-note">È già tra i pezzi proposti oggi.</p>
+{{else if .Score.ForecastDate}}<p class="empty-note"><strong>Proiezione:</strong> se non cambia nulla (nessuna nuova seduta, stesse confidenze), entra tra i primi 8 <strong>{{dateIT .Score.ForecastDate}}</strong> con punteggio {{f1 .Score.ForecastScore}}: {{.Score.ForecastWhy}}.</p>
+{{else}}<p class="empty-note"><strong>Proiezione:</strong> se non cambia nulla, non entra tra i primi 8 prima della sua prova più vicina ({{(index .Score.Upcoming 0).Name}}, {{dateIT (index .Score.Upcoming 0).Date}}).</p>{{end}}
 {{end}}
 </section>
 

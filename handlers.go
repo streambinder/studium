@@ -385,6 +385,216 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	return items, len(scores), nil
 }
 
+// forecastInput holds everything a piece's daily score depends on, so
+// future days can be scored without touching the database again.
+type forecastInput struct {
+	id       int64
+	concorsi []Concorso // linked, non-archived, still upcoming today
+	conf     float64
+	last     string // last practiced date, "" when never practiced
+}
+
+// planForecaster scores every candidate piece on arbitrary future days
+// from a snapshot of today's data: if nothing changes (no new sessions,
+// same confidences), only the calendar moves — urgency ramps, days
+// since the last practice grow, and held concorsi drop out.
+type planForecaster struct {
+	coeffs Coeffs
+	inputs []forecastInput
+}
+
+func (a *App) newPlanForecaster(today string) (*planForecaster, error) {
+	coeffs, err := a.getCoeffs()
+	if err != nil {
+		return nil, err
+	}
+	pieces, err := a.listPieces(0, "", false)
+	if err != nil {
+		return nil, err
+	}
+	f := &planForecaster{coeffs: coeffs}
+	for _, p := range pieces {
+		upcoming, _, _, err := upcomingConcorsi(p, today)
+		if err != nil {
+			return nil, err
+		}
+		if len(upcoming) == 0 {
+			continue
+		}
+		conf, rated, err := a.latestConfidence(p.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !rated {
+			conf = 2.5
+		}
+		last, err := a.lastPracticeDate(p.ID)
+		if err != nil {
+			return nil, err
+		}
+		f.inputs = append(f.inputs, forecastInput{id: p.ID, concorsi: upcoming, conf: conf, last: last})
+	}
+	return f, nil
+}
+
+// scoreOn computes the piece's plan score on an arbitrary day with the
+// same rules the plan applies today. ok=false when no concorso of the
+// piece is still upcoming on that day.
+func (f *planForecaster) scoreOn(in forecastInput, day string) (ScoreBreakdown, bool, error) {
+	var weights []int
+	days := -1
+	for _, c := range in.concorsi {
+		if c.Date < day {
+			continue
+		}
+		weights = append(weights, c.Weight)
+		d, err := daysBetween(day, c.Date)
+		if err != nil {
+			return ScoreBreakdown{}, false, err
+		}
+		if days < 0 || d < days {
+			days = d
+		}
+	}
+	if len(weights) == 0 {
+		return ScoreBreakdown{}, false, nil
+	}
+	since := 30
+	if in.last != "" {
+		n, err := daysBetween(in.last, day)
+		if err != nil {
+			return ScoreBreakdown{}, false, err
+		}
+		if n < 0 {
+			n = 0
+		}
+		since = n
+	}
+	return ComputeScore(ScoreInput{
+		Weights:    weights,
+		Days:       days,
+		Confidence: in.conf,
+		SinceDays:  since,
+	}, f.coeffs), true, nil
+}
+
+// entryDate returns the first day after today on which the piece would
+// rank in the plan's top 8 if nothing changed, with its score that day
+// and a short reason. date is "" when it never makes it before its last
+// upcoming concorso.
+func (f *planForecaster) entryDate(targetID int64, today string) (date string, score float64, reason string, err error) {
+	var target *forecastInput
+	for i := range f.inputs {
+		if f.inputs[i].id == targetID {
+			target = &f.inputs[i]
+		}
+	}
+	if target == nil {
+		return "", 0, "", nil
+	}
+	last := ""
+	for _, c := range target.concorsi {
+		if c.Date > last {
+			last = c.Date
+		}
+	}
+	day, err := time.Parse("2006-01-02", today)
+	if err != nil {
+		return "", 0, "", err
+	}
+	type scored struct {
+		id int64
+		br ScoreBreakdown
+	}
+	for d := day.AddDate(0, 0, 1); ; d = d.AddDate(0, 0, 1) {
+		ds := d.Format("2006-01-02")
+		if ds > last {
+			break
+		}
+		var ss []scored
+		var tScore float64
+		var tOK bool
+		for _, in := range f.inputs {
+			br, ok, err := f.scoreOn(in, ds)
+			if err != nil {
+				return "", 0, "", err
+			}
+			if !ok {
+				continue
+			}
+			ss = append(ss, scored{in.id, br})
+			if in.id == targetID {
+				tScore, tOK = br.Score, true
+			}
+		}
+		if !tOK {
+			break
+		}
+		sort.SliceStable(ss, func(i, j int) bool {
+			if ss[i].br.Score != ss[j].br.Score {
+				return ss[i].br.Score > ss[j].br.Score
+			}
+			if ss[i].br.Base != ss[j].br.Base {
+				return ss[i].br.Base > ss[j].br.Base
+			}
+			return ss[i].id < ss[j].id
+		})
+		rank := 0
+		for i, s := range ss {
+			if s.id == targetID {
+				rank = i + 1
+			}
+		}
+		if rank > 0 && rank <= 8 {
+			reason, err := f.entryReason(target, today, ds)
+			if err != nil {
+				return "", 0, "", err
+			}
+			return ds, tScore, reason, nil
+		}
+	}
+	return "", 0, "", nil
+}
+
+// entryReason explains what pushes the piece into the top 8 on its
+// entry day: a rival concorso held the day before, or its own urgency.
+func (f *planForecaster) entryReason(target *forecastInput, today, entryDay string) (string, error) {
+	d, err := time.Parse("2006-01-02", entryDay)
+	if err != nil {
+		return "", err
+	}
+	prevDay := d.AddDate(0, 0, -1).Format("2006-01-02")
+	own := map[int64]bool{}
+	for _, c := range target.concorsi {
+		own[c.ID] = true
+	}
+	for _, in := range f.inputs {
+		for _, c := range in.concorsi {
+			if c.Date == prevDay && !own[c.ID] {
+				return "dal giorno dopo la prova di " + c.Name + " i suoi pezzi lasciano la testa della classifica", nil
+			}
+		}
+	}
+	brToday, _, err := f.scoreOn(*target, today)
+	if err != nil {
+		return "", err
+	}
+	brEntry, _, err := f.scoreOn(*target, entryDay)
+	if err != nil {
+		return "", err
+	}
+	if brEntry.Urgency > brToday.Urgency {
+		nearestName, nearestDate := "", ""
+		for _, c := range target.concorsi {
+			if c.Date >= entryDay && (nearestDate == "" || c.Date < nearestDate) {
+				nearestDate, nearestName = c.Date, c.Name
+			}
+		}
+		return "l'urgenza di " + nearestName + " cresce man mano che la prova si avvicina", nil
+	}
+	return "la soglia dei primi 8 si abbassa man mano che le prove più vicine si svolgono", nil
+}
+
 // autoSkipOverflow drops the plan pieces that no longer fit today's
 // remaining time, least urgent first: unpracticed pieces whose summed
 // suggested minutes exceed what is left leave the plan with an
@@ -1481,11 +1691,14 @@ type pezzoDetailData struct {
 // the piece detail page with the same breakdown as the plan cards.
 type pezzoScore struct {
 	planItem
-	HasUpcoming bool
-	Skipped     bool
-	Rank        int // 1-based position among today's candidates, 0 when out
-	Candidates  int
-	InTop       bool // within the first 8, the ones the plan proposes
+	HasUpcoming   bool
+	Skipped       bool
+	Rank          int // 1-based position among today's candidates, 0 when out
+	Candidates    int
+	InTop         bool   // within the first 8, the ones the plan proposes
+	ForecastDate  string // first future day in the top 8 if nothing changes
+	ForecastScore float64
+	ForecastWhy   string
 }
 
 type sparkPoint struct {
@@ -1581,6 +1794,19 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+		}
+		if !score.InTop {
+			fc, err := a.newPlanForecaster(today)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fDate, fScore, fWhy, err := fc.entryDate(p.ID, today)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			score.ForecastDate, score.ForecastScore, score.ForecastWhy = fDate, fScore, fWhy
 		}
 	}
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
