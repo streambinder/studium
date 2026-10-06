@@ -1702,6 +1702,7 @@ type giornoData struct {
 	Minutes   int
 	Practiced int // pieces with a real session that day (skips excluded)
 	Entries   []giornoPiece
+	Skipped   []skippedEntry // pieces whose only trace that day is a skip marker
 }
 
 // handleDiarioGiorno shows one day with every piece that concerns it.
@@ -1733,6 +1734,8 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 	data := giornoData{Title: "Diario", Nav: "diario", Date: date}
 	byKey := map[int64]int{}
 	counted := map[int64]bool{}
+	skipAuto := map[int64]bool{}
+	hasReal := map[int64]bool{}
 	for rows.Next() {
 		var s Session
 		var pid int64
@@ -1753,6 +1756,16 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 			counted[s.PieceID] = true
 			data.Practiced++
 		}
+		switch s.Note {
+		case "saltato", "rimandato":
+			skipAuto[s.PieceID] = false // an explicit skip wins over the plan's marker
+		case "auto-saltato":
+			if _, seen := skipAuto[s.PieceID]; !seen {
+				skipAuto[s.PieceID] = true
+			}
+		default:
+			hasReal[s.PieceID] = true
+		}
 		data.Entries[idx].Sessions = append(data.Entries[idx].Sessions, s)
 		data.Entries[idx].Minutes += s.Minutes
 		data.Minutes += s.Minutes
@@ -1760,6 +1773,65 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 	if err := rows.Err(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	// Pieces whose only trace that day is a skip marker leave the diary
+	// entries and get the same card the homepage Saltati section uses.
+	skippedIDs := map[int64]bool{}
+	for pid, isAuto := range skipAuto {
+		if !hasReal[pid] {
+			skippedIDs[pid] = isAuto
+		}
+	}
+	if len(skippedIDs) > 0 {
+		pieces, err := a.listPieces(0, "", false, "")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		byID := make(map[int64]Piece, len(pieces))
+		for _, p := range pieces {
+			byID[p.ID] = p
+		}
+		for pid, isAuto := range skippedIDs {
+			p, ok := byID[pid]
+			if !ok {
+				continue
+			}
+			data.Skipped = append(data.Skipped, skippedEntry{P: p, Auto: isAuto})
+		}
+		landed := make(map[int64]bool, len(data.Skipped))
+		for _, e := range data.Skipped {
+			landed[e.P.ID] = true
+		}
+		kept := data.Entries[:0]
+		for _, e := range data.Entries {
+			if !landed[e.PieceID] {
+				kept = append(kept, e)
+			}
+		}
+		data.Entries = kept
+		sort.Slice(data.Skipped, func(i, j int) bool {
+			if data.Skipped[i].Auto != data.Skipped[j].Auto {
+				return !data.Skipped[i].Auto // explicit skips first
+			}
+			if data.Skipped[i].P.Composer != data.Skipped[j].P.Composer {
+				return data.Skipped[i].P.Composer < data.Skipped[j].P.Composer
+			}
+			return data.Skipped[i].P.Work < data.Skipped[j].P.Work
+		})
+		if len(data.Skipped) > 0 {
+			tmp := make([]Piece, len(data.Skipped))
+			for i, e := range data.Skipped {
+				tmp[i] = e.P
+			}
+			if err := a.stampPrepLevels(tmp); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			for i := range data.Skipped {
+				data.Skipped[i].P = tmp[i]
+			}
+		}
 	}
 	a.render(w, "giornata.html", data)
 }
