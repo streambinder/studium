@@ -1705,29 +1705,77 @@ type pezzoScore struct {
 
 type sparkPoint struct {
 	X, Y string
+	Conf int
+	Date string
+}
+
+type sparkGrid struct {
+	Y     string
+	Label int
 }
 
 // sparkline holds precomputed SVG coordinates; the template renders them
 // through html/template so nothing is ever injected as raw HTML.
 type sparkline struct {
-	Points []sparkPoint
+	Points     []sparkPoint
+	Grid       []sparkGrid // one row per confidence level, 1..5
+	First      string      // date of the oldest point
+	Last       string      // date of the newest point
+	FirstX     string
+	LastX      string
+	LastLabelY string // y of the current-value label above the last point
+	LastConf   int
+	Single     bool // a single point: one date label is enough
 }
 
-func buildSparkline(confs []int) sparkline {
-	const W, H = 260, 64
+// confPoint is one rated session feeding the sparkline, oldest first.
+type confPoint struct {
+	Date string
+	Conf int
+}
+
+const (
+	sparkX0 = 26.0  // plot left edge, past the y labels
+	sparkX1 = 292.0 // plot right edge
+	sparkY1 = 86.0  // y of confidence 1 (bottom)
+	sparkY5 = 10.0  // y of confidence 5 (top)
+)
+
+func sparkY(conf int) float64 {
+	return sparkY1 - float64(conf-1)*(sparkY1-sparkY5)/4
+}
+
+func buildSparkline(pts []confPoint) sparkline {
 	var s sparkline
-	for i, c := range confs {
+	for c := 1; c <= 5; c++ {
+		s.Grid = append(s.Grid, sparkGrid{Y: strconv.FormatFloat(sparkY(c), 'f', 1, 64), Label: c})
+	}
+	n := len(pts)
+	for i, pt := range pts {
 		var x float64
-		if len(confs) == 1 {
-			x = float64(W) / 2
+		if n == 1 {
+			x = (sparkX0 + sparkX1) / 2
 		} else {
-			x = float64(i) * float64(W) / float64(len(confs)-1)
+			x = sparkX0 + float64(i)*(sparkX1-sparkX0)/float64(n-1)
 		}
-		y := float64(H) - 5 - float64(c-1)/4*(float64(H)-10)
 		s.Points = append(s.Points, sparkPoint{
-			X: strconv.FormatFloat(x, 'f', 1, 64),
-			Y: strconv.FormatFloat(y, 'f', 1, 64),
+			X:    strconv.FormatFloat(x, 'f', 1, 64),
+			Y:    strconv.FormatFloat(sparkY(pt.Conf), 'f', 1, 64),
+			Conf: pt.Conf,
+			Date: pt.Date,
 		})
+	}
+	if n > 0 {
+		s.First, s.Last = pts[0].Date, pts[n-1].Date
+		s.FirstX = s.Points[0].X
+		last := s.Points[n-1]
+		s.LastX, s.LastConf = last.X, last.Conf
+		ly, _ := strconv.ParseFloat(last.Y, 64)
+		if ly -= 10; ly < 9 {
+			ly = 9
+		}
+		s.LastLabelY = strconv.FormatFloat(ly, 'f', 1, 64)
+		s.Single = n == 1
 	}
 	return s
 }
@@ -1744,7 +1792,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer closeRowsLogged(rows)
 	var sessions []Session
-	var confs []int // oldest -> newest for the sparkline
+	var cps []confPoint // oldest -> newest for the sparkline
 	for rows.Next() {
 		var s Session
 		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.Tempo); err != nil {
@@ -1753,7 +1801,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		sessions = append(sessions, s)
 		if s.Confidence > 0 {
-			confs = append([]int{s.Confidence}, confs...)
+			cps = append([]confPoint{{Date: s.Date, Conf: s.Confidence}}, cps...)
 		}
 	}
 	stamped := []Piece{p}
@@ -1812,7 +1860,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.render(w, "pezzo_detail.html", pezzoDetailData{
-		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(confs), Score: score,
+		Title: p.Composer + " — " + p.Work, Nav: "pezzi", Piece: p, Sessions: sessions, Spark: buildSparkline(cps), Score: score,
 	})
 }
 

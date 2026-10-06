@@ -1270,10 +1270,44 @@ label.check {
 
 .spark {
   width: 100%;
-  max-width: 340px;
+  max-width: 460px;
   height: auto;
   display: block;
   margin-top: 0.4rem;
+}
+
+.spark-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.spark-axis {
+  stroke: #d8cfb8;
+  stroke-width: 1;
+}
+
+.spark text {
+  font-family: var(--font-body);
+  fill: var(--muted);
+}
+
+.spark-ylabel,
+.spark-xlabel {
+  font-size: 9.5px;
+}
+
+.spark-lastval {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--accent-deep);
+}
+
+.spark circle {
+  cursor: pointer;
+}
+
+.spark circle:hover {
+  fill: var(--accent-bright);
 }
 
 .spark polyline {
@@ -1282,8 +1316,8 @@ label.check {
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 600;
-  stroke-dashoffset: 600;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
   animation: draw 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
 }
 
