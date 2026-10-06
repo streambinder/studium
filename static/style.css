@@ -437,10 +437,19 @@ h2 {
   overflow: hidden;
 }
 
-.done-card {
-  background: #e9e2cf;
-  border-color: #d5c9a8;
+.done-card,
+.skipped-card {
+  background: #e8e8e5;
+  border-color: #d0d0ca;
   box-shadow: none;
+}
+
+/* Inside greyed-out cards the kind badge follows the greyscale too. */
+.done-card .badge.kind,
+.skipped-card .badge.kind {
+  background: rgba(33, 28, 21, 0.06);
+  color: #57534a;
+  border-color: rgba(33, 28, 21, 0.14);
 }
 
 .done-corner {
@@ -451,7 +460,7 @@ h2 {
 }
 
 .done-card .card-head {
-  padding-right: 8rem;
+  padding-right: 9rem;
 }
 
 .day-link {
@@ -631,8 +640,12 @@ h2 {
   right: 0.95rem;
 }
 
-.done-card .prep-pin.pin-corner {
-  top: 2.95rem;
+/* The pin inside the done badge drops its tooltip below the badge:
+   above it there is no room before the card edge clips it. */
+.badge .pin-tip,
+.skipped-card .pin-tip {
+  bottom: auto;
+  top: calc(100% + 7px);
 }
 
 .prep-pin.pin-title {
