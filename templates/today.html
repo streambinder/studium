@@ -196,11 +196,11 @@
 {{end}}
 {{range .Skipped}}
 <article class="card plan-card skipped-card reveal">
-<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span>
+<span class="badge muted done-corner">{{if .Auto}}saltato dal piano{{else}}saltato{{end}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{if .Auto}}<span class="badge muted">saltato dal piano</span>{{else}}<span class="badge muted">saltato</span>{{end}}{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
 </article>
 {{end}}
 </section>

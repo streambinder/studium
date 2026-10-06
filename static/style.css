@@ -452,6 +452,32 @@ h2 {
   border-color: rgba(33, 28, 21, 0.14);
 }
 
+/* Every chip in the greyed-out cards shares the kind badge border. */
+.done-card .badge.muted,
+.skipped-card .badge.muted,
+.done-card .chip,
+.skipped-card .chip {
+  border-color: rgba(33, 28, 21, 0.14);
+}
+
+/* The chips row never wraps in these cards: it scrolls sideways. */
+.done-card .movement-row,
+.skipped-card .movement-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.done-card .movement-row::-webkit-scrollbar,
+.skipped-card .movement-row::-webkit-scrollbar {
+  display: none;
+}
+
+.done-card .movement-row > *,
+.skipped-card .movement-row > * {
+  flex: none;
+}
+
 .done-corner {
   position: absolute;
   top: 0.9rem;
@@ -459,7 +485,8 @@ h2 {
   white-space: nowrap;
 }
 
-.done-card .card-head {
+.done-card .card-head,
+.skipped-card .card-head {
   padding-right: 9rem;
 }
 
