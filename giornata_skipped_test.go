@@ -25,15 +25,19 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Beta', 'Pezzo', 'passo', 3)`,
 		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(3, 'Gamma', 'Pezzo', 'passo', 3)`,
 		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(4, 'Delta', 'Pezzo', 'passo', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(5, 'Epsilon', 'Pezzo', 'passo', 3)`,
 		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
 		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
 		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
 		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(4, 1)`,
+		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(5, 1)`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 0, 0, 'saltato')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 2, 0, 0, 'auto-saltato')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 3, 30, 4, '')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 3, 0, 0, 'auto-saltato')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 4, 0, 3, 'baseline')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 5, 0, 0, 'saltato')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 5, 15, 3, '')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
@@ -67,6 +71,20 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	// and a lone valuation stays a diary entry too.
 	if !strings.Contains(body, "Gamma") || !strings.Contains(body, "30 min") {
 		t.Fatal("practiced piece lost its diary entry")
+	}
+	// But its stale auto-skip marker line is gone: the plan dropped it,
+	// then it was practiced. Only the skipped cards may wear that badge,
+	// and those use the corner form, not the session-line form.
+	if got := strings.Count(body, `<span class="badge muted">saltato dal piano</span>`); got != 0 {
+		t.Fatalf("want no auto-skip session line on practiced pieces, got %d", got)
+	}
+	// A manual skip on a piece practiced anyway stays in the diary:
+	// it was a deliberate act, unlike the plan's provisional drop.
+	if !strings.Contains(body, "Epsilon") || !strings.Contains(body, "15 min") {
+		t.Fatal("manually skipped then practiced piece lost its diary entry")
+	}
+	if got := strings.Count(body, `<span class="badge muted">saltato</span>`); got != 1 {
+		t.Fatalf("want the manual skip line kept once, got %d", got)
 	}
 	if !strings.Contains(body, "Delta") || !strings.Contains(body, "valutazione") {
 		t.Fatal("valued piece lost its diary entry")

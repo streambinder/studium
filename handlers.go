@@ -1774,6 +1774,23 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// An auto-skip marker on a piece that was practiced after all is
+	// stale: the plan dropped it, then it came back and got its
+	// minutes. Showing it next to the session reads as a contradiction,
+	// so practiced entries drop the marker line. A manual skip stays:
+	// that was a deliberate act, and the diary keeps it.
+	for i := range data.Entries {
+		if data.Entries[i].Minutes == 0 {
+			continue
+		}
+		kept := data.Entries[i].Sessions[:0]
+		for _, s := range data.Entries[i].Sessions {
+			if s.Note != "auto-saltato" {
+				kept = append(kept, s)
+			}
+		}
+		data.Entries[i].Sessions = kept
+	}
 	// Pieces whose only trace that day is a skip marker leave the diary
 	// entries and get the same card the homepage Saltati section uses.
 	skippedIDs := map[int64]bool{}
