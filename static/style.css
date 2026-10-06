@@ -1098,6 +1098,7 @@ label {
 }
 
 input[type="text"],
+input[type="search"],
 input[type="url"],
 input[type="number"],
 input[type="time"],
@@ -1196,6 +1197,16 @@ input[type="checkbox"] {
 
 .filters label {
   margin: 0;
+}
+
+/* The free-text search grows to fill the filter row like a real field. */
+.filters label.search {
+  flex: 1 1 220px;
+}
+
+input[type="search"] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 fieldset {
