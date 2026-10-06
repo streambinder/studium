@@ -47,7 +47,7 @@ func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 	for _, t := range tiles {
 		scores[t.PieceID] = t.Prep
 	}
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -81,7 +81,7 @@ func (a *App) stampPrepLevels(pieces []Piece) error {
 		byPiece[t.PieceID] = t.Level
 		scores[t.PieceID] = t.Prep
 	}
-	all, err := a.listPieces(0, "", false)
+	all, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
 // prepTilesFor builds the preparation map tiles; when selected is
 // non-nil only pieces linked to at least one selected concorso appear.
 func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]bool) ([]prepTile, error) {
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return nil, err
 	}

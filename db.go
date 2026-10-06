@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -358,7 +359,10 @@ func scanPieces(rows *sql.Rows) ([]Piece, error) {
 	})
 }
 
-func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([]Piece, error) {
+// listPieces returns the pieces matching the filters; query is a
+// free-text search over every text field of the piece (composer, work,
+// movement, kind) plus its concorsi names and excerpts.
+func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool, query string) ([]Piece, error) {
 	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.kind, p.difficulty,
 		p.archived_at IS NOT NULL FROM pieces p`
 	args := []any{}
@@ -374,6 +378,13 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool) ([
 	}
 	if !includeArchived {
 		where += ` AND p.archived_at IS NULL`
+	}
+	if query = strings.TrimSpace(query); query != "" {
+		like := "%" + strings.ToLower(query) + "%"
+		where += ` AND (LOWER(p.composer) LIKE ? OR LOWER(p.work) LIKE ? OR LOWER(p.movement) LIKE ? OR LOWER(p.kind) LIKE ?
+			OR EXISTS (SELECT 1 FROM piece_concorso pcq JOIN concorsi cq ON cq.id = pcq.concorso_id
+				WHERE pcq.piece_id = p.id AND (LOWER(cq.name) LIKE ? OR LOWER(pcq.estratto) LIKE ?)))`
+		args = append(args, like, like, like, like, like, like)
 	}
 	q += ` WHERE 1=1` + where + ` ORDER BY p.composer, p.work, p.movement`
 	rows, err := a.db.Query(q, args...)

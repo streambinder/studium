@@ -355,7 +355,7 @@ func (a *App) buildPlan(today string) ([]planItem, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return nil, 0, err
 	}
@@ -408,7 +408,7 @@ func (a *App) newPlanForecaster(today string) (*planForecaster, error) {
 	if err != nil {
 		return nil, err
 	}
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return nil, err
 	}
@@ -661,7 +661,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			data.BudgetPct = 100
 		}
 	}
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -904,6 +904,7 @@ type pezziData struct {
 	Concorsi       []Concorso
 	FilterConcorso int64
 	FilterKind     string
+	Search         string
 	ShowArchived   bool
 	Query          string // raw query of the current list view, for return redirects
 }
@@ -911,8 +912,9 @@ type pezziData struct {
 func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 	concorsoID := int64(formInt(r, "concorso", 0))
 	kind := r.URL.Query().Get("kind")
+	search := r.URL.Query().Get("q")
 	showArchived := r.URL.Query().Get("archiviati") == "1"
-	pieces, err := a.listPieces(concorsoID, kind, showArchived)
+	pieces, err := a.listPieces(concorsoID, kind, showArchived, search)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -927,7 +929,7 @@ func (a *App) handlePezzi(w http.ResponseWriter, r *http.Request) {
 	}
 	a.render(w, "pezzi.html", pezziData{
 		Title: "Pezzi", Nav: "pezzi", Pieces: pieces, Concorsi: concorsi,
-		FilterConcorso: concorsoID, FilterKind: kind, ShowArchived: showArchived,
+		FilterConcorso: concorsoID, FilterKind: kind, Search: search, ShowArchived: showArchived,
 		Query: r.URL.RawQuery,
 	})
 }
@@ -1380,7 +1382,7 @@ func (a *App) handleConcorsoDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	pieces, err := a.listPieces(c.ID, "", false)
+	pieces, err := a.listPieces(c.ID, "", false, "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

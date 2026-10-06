@@ -29,6 +29,7 @@
 </section>
 
 <form method="get" action="/pezzi" class="filters panel reveal">
+<label>Cerca <input type="search" name="q" value="{{.Search}}" placeholder="compositore, opera, movimento, concorso…" enterkeyhint="search" onchange="this.form.submit()"></label>
 <label>Concorso
 <select name="concorso" onchange="this.form.submit()">
 <option value="0">tutti</option>

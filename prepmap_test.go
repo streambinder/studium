@@ -214,7 +214,7 @@ func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
 		}
 	}
 	a := &App{db: db}
-	pieces, err := a.listPieces(0, "", false)
+	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
