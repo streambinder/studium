@@ -43,10 +43,10 @@ func TestTodayManualSessionWithoutAvailability(t *testing.T) {
 	if !strings.Contains(body, "Registra una sessione a mano") {
 		t.Fatal("manual session form missing without availability")
 	}
-	if !strings.Contains(body, "Completati") {
+	if !strings.Contains(body, "Completati e saltati") {
 		t.Fatal("Completati missing without availability despite a manual session today")
 	}
-	if !strings.Contains(body, "già in diario oggi") {
+	if !strings.Contains(body, "1 completato") {
 		t.Fatal("done count text missing")
 	}
 }
