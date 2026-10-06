@@ -29,42 +29,16 @@
 <footer class="site-footer"><span>studium · diario di studio</span></footer>
 <script>
 (function() {
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  function countUp(el) {
-    var target = parseInt(el.getAttribute('data-count'), 10);
-    if (isNaN(target) || el.dataset.done) return;
-    el.dataset.done = '1';
-    if (reduce) { el.textContent = target; return; }
-    var dur = 900, t0 = null;
-    function step(ts) {
-      if (!t0) t0 = ts;
-      var p = Math.min((ts - t0) / dur, 1);
-      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  function arm(el) {
-    el.querySelectorAll('[data-count]').forEach(countUp);
-    if (el.hasAttribute('data-count')) countUp(el);
-  }
-
   var io = new IntersectionObserver(function(entries) {
     entries.forEach(function(e) {
       if (e.isIntersecting) {
         e.target.classList.add('in');
         io.unobserve(e.target);
-        arm(e.target);
       }
     });
   }, {threshold: 0.1, rootMargin: '0px 0px -4% 0px'});
 
   document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
-  document.querySelectorAll('[data-count]').forEach(function(el) {
-    if (!el.closest('.reveal')) countUp(el);
-  });
 
   // Prep-map labels: shrink the font until the whole label fits its tile.
   function fitTileLabels() {

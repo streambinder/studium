@@ -50,7 +50,6 @@ body {
       transparent 55%
     ),
     var(--bg);
-  background-attachment: fixed;
   min-height: 100vh;
 }
 
