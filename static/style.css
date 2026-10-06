@@ -460,12 +460,16 @@ h2 {
   border-color: rgba(33, 28, 21, 0.14);
 }
 
-/* The chips row never wraps in these cards: it scrolls sideways. */
+/* The chips row never wraps in these cards: it scrolls sideways.
+   Positioned above the stretched card link, or the link eats the drag. */
 .done-card .movement-row,
 .skipped-card .movement-row {
+  position: relative;
+  z-index: 1;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .done-card .movement-row::-webkit-scrollbar,
