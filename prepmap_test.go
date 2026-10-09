@@ -164,7 +164,7 @@ func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
 		{Piece: Piece{ID: 2}, Minutes: 40},
 		{Piece: Piece{ID: 3}, Minutes: 30},
 	}
-	got, err := a.autoSkipOverflow(items, 50, "2026-10-02")
+	got, err := a.autoSkipOverflow(items, 50, 0, "2026-10-02")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
 		t.Fatalf("want one auto-saltato marker for piece 3, got %d", n)
 	}
 	// With almost no time left, everything unpracticed is trimmed.
-	got, err = a.autoSkipOverflow(got, 1, "2026-10-02")
+	got, err = a.autoSkipOverflow(got, 1, 0, "2026-10-02")
 	if err != nil {
 		t.Fatal(err)
 	}

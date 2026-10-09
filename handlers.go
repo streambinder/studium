@@ -608,19 +608,62 @@ func (f *planForecaster) entryReason(target *forecastInput, today, entryDay stri
 	return "la soglia dei primi 8 si abbassa man mano che le prove più vicine si svolgono", nil
 }
 
+// autoSkipGraceMin is the buffer kept before the plan drops a piece
+// for lack of time: the student may be halfway through a piece she
+// has not logged yet, so the plan must overrun by more than this
+// before anything is stamped as skipped.
+const autoSkipGraceMin = 30
+
+// romeLoc is the wall clock the availability windows are written in:
+// the local time of the person studying.
+var romeLoc = func() *time.Location {
+	loc, err := time.LoadLocation("Europe/Rome")
+	if err != nil {
+		return time.Local
+	}
+	return loc
+}()
+
+// nowMinRome returns the current time of day in minutes, in Rome.
+func nowMinRome() int {
+	n := time.Now().In(romeLoc)
+	return n.Hour()*60 + n.Minute()
+}
+
+// remainingToday sums the free availability still usable from now: a
+// window that has not started counts in full, one in progress counts
+// to its end, an ended one counts nothing. Minutes already logged do
+// not consume it: they are in the past, and their pieces have already
+// left the plan as practiced.
+func remainingToday(avail []Availability, nowMin int) int {
+	rem := 0
+	for _, v := range avail {
+		if v.Kind == "busy" || v.EndMin <= nowMin {
+			continue
+		}
+		start := v.StartMin
+		if start < nowMin {
+			start = nowMin
+		}
+		rem += v.EndMin - start
+	}
+	return rem
+}
+
 // autoSkipOverflow drops the plan pieces that no longer fit today's
 // remaining time, least urgent first: unpracticed pieces whose summed
-// suggested minutes exceed what is left leave the plan with an
-// 'auto-saltato' trace in the diary. Unlike a manual skip, the marker
-// never excludes the piece: add time later in the day and it is back.
-func (a *App) autoSkipOverflow(items []planItem, remaining int, today string) ([]planItem, error) {
+// suggested minutes exceed what is left, plus the grace buffer, leave
+// the plan with an 'auto-saltato' trace in the diary. Unlike a manual
+// skip, the marker never excludes the piece: add time later in the
+// day and it is back.
+func (a *App) autoSkipOverflow(items []planItem, remaining, grace int, today string) ([]planItem, error) {
 	sum := 0
 	for _, it := range items {
 		if !it.Practiced {
 			sum += it.Minutes
 		}
 	}
-	for sum > remaining {
+	for sum > remaining+grace {
 		victim := -1
 		for i := len(items) - 1; i >= 0; i-- {
 			if !items[i].Practiced {
@@ -705,15 +748,28 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		for i := range items {
 			scores[i] = items[i].Score
 		}
-		mins := AllocateMinutes(scores, data.Budget, 8)
+		// The plan is sized on the availability still usable from
+		// now, not on the whole day budget: minutes already logged
+		// belong to the past and must not eat a window that has not
+		// even started. When no window time is left today the plan
+		// is still shown, sized on the day budget, but nothing is
+		// dropped: there is no time left to run out of.
+		remaining := remainingToday(avail, nowMinRome())
+		allocBudget := remaining
+		if allocBudget <= 0 {
+			allocBudget = data.Budget
+		}
+		mins := AllocateMinutes(scores, allocBudget, 8)
 		items = items[:len(mins)]
 		for i := range items {
 			items[i].Minutes = mins[i]
 		}
-		items, err = a.autoSkipOverflow(items, data.Budget-data.Logged, today)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if remaining > 0 {
+			items, err = a.autoSkipOverflow(items, remaining, autoSkipGraceMin, today)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		data.Items = items
 		for _, it := range items {
@@ -945,11 +1001,22 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 			tempo = bpm
 		}
 	}
-	_, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note, tempo)
+	res, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note, tempo)
 		VALUES(?,?,?,?,?,?)`, todayStr(), pieceID, minutes, conf, r.FormValue("note"), tempo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	// A piece that was practiced after all is not skipped: logging
+	// real minutes on it clears any skip marker it carries today.
+	if minutes > 0 {
+		savedID, _ := res.LastInsertId()
+		if _, err := a.db.Exec(`DELETE FROM sessions
+			WHERE date=? AND piece_id=? AND id<>? AND note IN ('saltato','rimandato','auto-saltato')`,
+			todayStr(), pieceID, savedID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	log.Printf("event session saved piece=%d date=%s minutes=%d confidence=%d", pieceID, todayStr(), minutes, conf)
 	http.Redirect(w, r, "/", http.StatusSeeOther)

@@ -43,7 +43,7 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 		t.Fatalf("plan: want 1 item, got %d", len(items))
 	}
 	items[0].Minutes = 30
-	kept, err := a.autoSkipOverflow(items, 0, today)
+	kept, err := a.autoSkipOverflow(items, 0, 0, today)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 
 	// A second overflow writes no duplicate marker.
 	items[0].Minutes = 30
-	if _, err := a.autoSkipOverflow(items, 0, today); err != nil {
+	if _, err := a.autoSkipOverflow(items, 0, 0, today); err != nil {
 		t.Fatal(err)
 	}
 	var n int
