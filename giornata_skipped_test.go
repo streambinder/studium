@@ -69,7 +69,7 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	}
 	// A practiced piece keeps its diary entry even with a skip marker,
 	// and a lone valuation stays a diary entry too.
-	if !strings.Contains(body, "Gamma") || !strings.Contains(body, "30 min") {
+	if !strings.Contains(body, "Gamma") || !strings.Contains(body, "30m") {
 		t.Fatal("practiced piece lost its diary entry")
 	}
 	// But its stale auto-skip marker line is gone: the plan dropped it,
@@ -80,7 +80,7 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	}
 	// A manual skip on a piece practiced anyway stays in the diary:
 	// it was a deliberate act, unlike the plan's provisional drop.
-	if !strings.Contains(body, "Epsilon") || !strings.Contains(body, "15 min") {
+	if !strings.Contains(body, "Epsilon") || !strings.Contains(body, "15m") {
 		t.Fatal("manually skipped then practiced piece lost its diary entry")
 	}
 	if got := strings.Count(body, `<span class="badge muted">saltato</span>`); got != 1 {

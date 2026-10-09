@@ -2,7 +2,7 @@
 <div class="page-head">
 <span class="overline">Diario</span>
 <h1>{{dateIT .Date}}</h1>
-<p class="meta">{{.Minutes}} min registrati · {{.Practiced}} pezz{{if eq .Practiced 1}}o{{else}}i{{end}}</p>
+<p class="meta">{{dur .Minutes}} registrati · {{.Practiced}} pezz{{if eq .Practiced 1}}o{{else}}i{{end}}</p>
 </div>
 
 <div class="stack">
@@ -10,10 +10,10 @@
 <article class="card reveal">
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.PieceID}}">{{.Title}}</a></strong>
-{{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>{{end}}
+{{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
-{{range .Sessions}}<div class="meta session-line">{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{else if eq .Note "auto-saltato"}}<span class="badge muted">saltato dal piano</span>{{else if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{else if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{if gt .Confidence 0}} · confidenza {{.Confidence}}/5{{end}}{{else}}{{if gt .Minutes 0}}{{.Minutes}} min{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}confidenza {{.Confidence}}/5{{end}}{{if .Tempo.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}metronomo {{.Tempo.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .Tempo.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
+{{range .Sessions}}<div class="meta session-line">{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{else if eq .Note "auto-saltato"}}<span class="badge muted">saltato dal piano</span>{{else if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{else if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{if gt .Confidence 0}} · confidenza {{.Confidence}}/5{{end}}{{else}}{{if gt .Minutes 0}}{{dur .Minutes}}{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}confidenza {{.Confidence}}/5{{end}}{{if .Tempo.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}metronomo {{.Tempo.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .Tempo.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
 </article>
 {{else}}{{if not .Skipped}}
 <p class="empty">Nessuna seduta registrata in questa giornata.</p>

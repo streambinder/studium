@@ -57,6 +57,15 @@ func hhmm(mins int) string {
 	return fmt.Sprintf("%02d:%02d", mins/60, mins%60)
 }
 
+// dur renders a duration in minutes compactly: under an hour as
+// "45m", at or over an hour as "3:04h".
+func dur(mins int) string {
+	if mins < 60 {
+		return fmt.Sprintf("%dm", mins)
+	}
+	return fmt.Sprintf("%d:%02dh", mins/60, mins%60)
+}
+
 func f1(f float64) string { return fmt.Sprintf("%.1f", f) }
 
 func confLabel(conf float64, rated bool) string {
@@ -104,6 +113,7 @@ func tmplFuncs() template.FuncMap {
 		"pct":        pct,
 		"urlParts":   urlParts,
 		"hhmm":       hhmm,
+		"dur":        dur,
 		"dateIT":     dateIT,
 		"dateDMY":    dateDMY,
 		"confLabel":  confLabel,

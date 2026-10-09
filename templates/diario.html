@@ -42,7 +42,7 @@
 <span class="day-dot" aria-hidden="true"></span>
 <span class="day-date">{{dateIT .Date}}</span>
 <span class="spacer"></span>
-<span class="badge"><span data-count="{{.Minutes}}">{{.Minutes}}</span> min</span>
+<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>
 <span class="badge kind">{{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span>
 </div>
 </a>

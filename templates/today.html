@@ -15,11 +15,11 @@
 <span class="overline">Piano di studio</span>
 <h1>{{dateIT .Date}}</h1>
 <div class="hero-stats">
-<div class="hero-stat"><span class="num" data-count="{{.Budget}}">{{.Budget}}</span><span class="lbl">minuti di budget</span></div>
+<div class="hero-stat"><span class="num" data-count="{{.Budget}}">{{dur .Budget}}</span><span class="lbl">di budget</span></div>
 <div class="hero-stat"><span class="num" data-count="{{.PlanTotal}}">{{.PlanTotal}}</span><span class="lbl">pezzi in piano</span></div>
-<div class="hero-stat"><span class="num" data-count="{{.Logged}}">{{.Logged}}</span><span class="lbl">minuti registrati oggi</span></div>
+<div class="hero-stat"><span class="num" data-count="{{.Logged}}">{{dur .Logged}}</span><span class="lbl">registrati oggi</span></div>
 </div>
-<div class="budget-bar" role="img" aria-label="{{.Logged}} minuti registrati oggi su {{.Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
+<div class="budget-bar" role="img" aria-label="{{dur .Logged}} registrati oggi su {{dur .Budget}} di budget"><span style="--w: {{.BudgetPct}}%"></span></div>
 <p class="hero-bar-note">{{.LoggedPct}}% del budget di oggi già in diario</p>
 </section>
 
@@ -129,11 +129,11 @@
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
-{{if .Logged}}<span class="badge done">✓ {{.Logged}} min oggi</span>{{end}}
+{{if .Logged}}<span class="badge done">✓ {{dur .Logged}} oggi</span>{{end}}
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
 {{if .Upcoming}}<div class="chips">{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
-<div class="slot">{{.Minutes}} min suggeriti</div>
+<div class="slot">{{dur .Minutes}} suggeriti</div>
 <details class="reason"><summary>Perché oggi? punteggio {{f1 .Score}}</summary>
 <div class="details-body">
 <ul>
@@ -178,7 +178,7 @@
 <div class="section-head"><h2>Completati e saltati</h2><span class="meta">{{.DoneCount}} completat{{if eq .DoneCount 1}}o{{else}}i{{end}}{{if .Skipped}} · {{len .Skipped}} saltat{{if eq (len .Skipped) 1}}o{{else}}i{{end}}{{end}}</span></div>
 {{range .Items}}{{if .Practiced}}
 <article class="card plan-card done-card reveal">
-<span class="badge done done-corner">✓ {{.Logged}} min oggi<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span></span>
+<span class="badge done done-corner">✓ {{dur .Logged}} oggi<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
 </div>
@@ -187,7 +187,7 @@
 {{end}}{{end}}
 {{range .ExtraDone}}
 <article class="card plan-card done-card reveal">
-<span class="badge done done-corner">✓ {{.Logged}} min oggi<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
+<span class="badge done done-corner">✓ {{dur .Logged}} oggi<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>

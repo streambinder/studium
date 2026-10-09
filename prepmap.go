@@ -265,7 +265,7 @@ func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]boo
 		}
 		label := strings.TrimSpace(p.Composer + " — " + p.Work)
 		var b strings.Builder
-		fmt.Fprintf(&b, "%s\nDifficoltà %d/5 · %d sessioni · %d min", label, p.Difficulty, len(sessions), minutes)
+		fmt.Fprintf(&b, "%s\nDifficoltà %d/5 · %d sessioni · %s", label, p.Difficulty, len(sessions), dur(minutes))
 		if rated {
 			fmt.Fprintf(&b, " · confidenza %.1f/5", avgConf)
 		}
