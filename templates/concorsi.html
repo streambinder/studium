@@ -42,28 +42,9 @@
 {{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
 </div>
 <div class="meta">{{dateIT .Date}}</div>
-<div class="diff-row"><label>Priorità <input type="range" class="prio-slider" data-id="{{.ID}}" min="1" max="5" step="1" value="{{.Weight}}"> <output>{{.Weight}}</output></label><span class="diff-state" aria-live="polite"></span></div>
 <div class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</div>
 </article>
 {{end}}
 </div>
 
-<script>
-document.querySelectorAll('.prio-slider').forEach(function(s) {
-  var out = s.parentElement.querySelector('output');
-  var state = s.parentElement.parentElement.querySelector('.diff-state');
-  s.addEventListener('input', function() { out.textContent = s.value; });
-  s.addEventListener('change', function() {
-    fetch('/concorsi/' + s.dataset.id + '/priorita', {
-      method: 'POST',
-      body: new URLSearchParams({priority: s.value})
-    }).then(function(r) {
-      state.textContent = r.ok ? '✓ salvato' : 'errore, riprova';
-      setTimeout(function() { state.textContent = ''; }, 1800);
-    }).catch(function() {
-      state.textContent = 'errore, riprova';
-    });
-  });
-});
-</script>
 {{end}}
