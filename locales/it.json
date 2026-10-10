@@ -148,20 +148,20 @@
     "other": "%d pezzi · i pesi dei concorsi guidano il piano giornaliero"
   },
   "pieces.title": "Pezzi",
-  "prep.label": "Preparazione %d%%",
-  "prepmap.aria_all": "Mappa di preparazione dei pezzi",
-  "prepmap.aria_audition": "Mappa di preparazione dei pezzi di questo concorso",
-  "prepmap.legend": "da preparare → pronto · la dimensione riflette la difficoltà (1–5)",
-  "prepmap.legend_diary": "da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in ",
+  "prep.label": "Sicurezza %d%%",
+  "prepmap.aria_all": "Mappa di sicurezza dei pezzi",
+  "prepmap.aria_audition": "Mappa di sicurezza dei pezzi di questo concorso",
+  "prepmap.legend": "poca sicurezza → molta sicurezza · la dimensione riflette la difficoltà (1–5)",
+  "prepmap.legend_diary": "poca sicurezza → molta sicurezza · la dimensione riflette la difficoltà (1–5), tarabile in ",
   "prepmap.meta": {
     "one": "%d pezzo · dimensione = difficoltà · colore = stato",
     "other": "%d pezzi · dimensione = difficoltà · colore = stato"
   },
   "prepmap.tile_conf": "sicurezza %s/5",
   "prepmap.tile_difficulty": "Difficoltà %d/5",
-  "prepmap.title": "Mappa di preparazione",
-  "readiness.note": "Media dello stato di preparazione dei pezzi collegati a ciascun concorso.",
-  "readiness.title": "Prontezza per concorso",
+  "prepmap.title": "Mappa di sicurezza",
+  "readiness.note": "Media della sicurezza dei pezzi collegati a ciascun concorso.",
+  "readiness.title": "Sicurezza per concorso",
   "resources.count": {
     "one": "%d risorsa",
     "other": "%d risorse"

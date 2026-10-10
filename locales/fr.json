@@ -148,20 +148,20 @@
     "other": "%d morceaux · les poids des auditions guident le plan quotidien"
   },
   "pieces.title": "Morceaux",
-  "prep.label": "Préparation %d%%",
-  "prepmap.aria_all": "Carte de préparation des morceaux",
-  "prepmap.aria_audition": "Carte de préparation des morceaux de cette audition",
-  "prepmap.legend": "à préparer → prêt · la taille reflète la difficulté (1–5)",
-  "prepmap.legend_diary": "à préparer → prêt · la taille reflète la difficulté (1–5), réglable dans ",
+  "prep.label": "Confiance %d%%",
+  "prepmap.aria_all": "Carte de confiance des morceaux",
+  "prepmap.aria_audition": "Carte de confiance des morceaux de cette audition",
+  "prepmap.legend": "peu de confiance → pleine confiance · la taille reflète la difficulté (1–5)",
+  "prepmap.legend_diary": "peu de confiance → pleine confiance · la taille reflète la difficulté (1–5), réglable dans ",
   "prepmap.meta": {
     "one": "%d morceau · taille = difficulté · couleur = état",
     "other": "%d morceaux · taille = difficulté · couleur = état"
   },
   "prepmap.tile_conf": "confiance %s/5",
   "prepmap.tile_difficulty": "Difficulté %d/5",
-  "prepmap.title": "Carte de préparation",
-  "readiness.note": "Préparation moyenne des morceaux liés à chaque audition.",
-  "readiness.title": "Préparation par audition",
+  "prepmap.title": "Carte de confiance",
+  "readiness.note": "Confiance moyenne des morceaux liés à chaque audition.",
+  "readiness.title": "Confiance par audition",
   "resources.count": {
     "one": "%d ressource",
     "other": "%d ressources"

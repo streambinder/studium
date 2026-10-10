@@ -148,20 +148,20 @@
     "other": "%d pieces · audition weights drive the daily plan"
   },
   "pieces.title": "Pieces",
-  "prep.label": "Preparation %d%%",
-  "prepmap.aria_all": "Preparation map of the pieces",
-  "prepmap.aria_audition": "Preparation map of this audition's pieces",
-  "prepmap.legend": "to prepare → ready · size reflects difficulty (1–5)",
-  "prepmap.legend_diary": "to prepare → ready · size reflects difficulty (1–5), tunable in ",
+  "prep.label": "Confidence %d%%",
+  "prepmap.aria_all": "Confidence map of the pieces",
+  "prepmap.aria_audition": "Confidence map of this audition's pieces",
+  "prepmap.legend": "low confidence → high confidence · size reflects difficulty (1–5)",
+  "prepmap.legend_diary": "low confidence → high confidence · size reflects difficulty (1–5), tunable in ",
   "prepmap.meta": {
     "one": "%d piece · size = difficulty · colour = state",
     "other": "%d pieces · size = difficulty · colour = state"
   },
   "prepmap.tile_conf": "confidence %s/5",
   "prepmap.tile_difficulty": "Difficulty %d/5",
-  "prepmap.title": "Preparation map",
-  "readiness.note": "Average preparation of the pieces linked to each audition.",
-  "readiness.title": "Readiness by audition",
+  "prepmap.title": "Confidence map",
+  "readiness.note": "Average confidence of the pieces linked to each audition.",
+  "readiness.title": "Confidence by audition",
   "resources.count": {
     "one": "%d resource",
     "other": "%d resources"

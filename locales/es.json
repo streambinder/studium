@@ -148,20 +148,20 @@
     "other": "%d piezas · los pesos de las audiciones guían el plan diario"
   },
   "pieces.title": "Piezas",
-  "prep.label": "Preparación %d%%",
-  "prepmap.aria_all": "Mapa de preparación de las piezas",
-  "prepmap.aria_audition": "Mapa de preparación de las piezas de esta audición",
-  "prepmap.legend": "por preparar → lista · el tamaño refleja la dificultad (1–5)",
-  "prepmap.legend_diary": "por preparar → lista · el tamaño refleja la dificultad (1–5), ajustable en ",
+  "prep.label": "Seguridad %d%%",
+  "prepmap.aria_all": "Mapa de seguridad de las piezas",
+  "prepmap.aria_audition": "Mapa de seguridad de las piezas de esta audición",
+  "prepmap.legend": "poca seguridad → mucha seguridad · el tamaño refleja la dificultad (1–5)",
+  "prepmap.legend_diary": "poca seguridad → mucha seguridad · el tamaño refleja la dificultad (1–5), ajustable en ",
   "prepmap.meta": {
     "one": "%d pieza · tamaño = dificultad · color = estado",
     "other": "%d piezas · tamaño = dificultad · color = estado"
   },
   "prepmap.tile_conf": "seguridad %s/5",
   "prepmap.tile_difficulty": "Dificultad %d/5",
-  "prepmap.title": "Mapa de preparación",
-  "readiness.note": "Preparación media de las piezas vinculadas a cada audición.",
-  "readiness.title": "Preparación por audición",
+  "prepmap.title": "Mapa de seguridad",
+  "readiness.note": "Seguridad media de las piezas vinculadas a cada audición.",
+  "readiness.title": "Seguridad por audición",
   "resources.count": {
     "one": "%d recurso",
     "other": "%d recursos"

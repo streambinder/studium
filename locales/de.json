@@ -148,20 +148,20 @@
     "other": "%d Stücke · die Gewichte der Probespiele steuern den Tagesplan"
   },
   "pieces.title": "Stücke",
-  "prep.label": "Vorbereitung %d%%",
-  "prepmap.aria_all": "Vorbereitungskarte der Stücke",
-  "prepmap.aria_audition": "Vorbereitungskarte der Stücke dieses Probespiels",
-  "prepmap.legend": "vorzubereiten → bereit · die Größe spiegelt die Schwierigkeit (1–5)",
-  "prepmap.legend_diary": "vorzubereiten → bereit · die Größe spiegelt die Schwierigkeit (1–5), einstellbar unter ",
+  "prep.label": "Sicherheit %d%%",
+  "prepmap.aria_all": "Sicherheitskarte der Stücke",
+  "prepmap.aria_audition": "Sicherheitskarte der Stücke dieses Probespiels",
+  "prepmap.legend": "wenig Sicherheit → viel Sicherheit · die Größe spiegelt die Schwierigkeit (1–5)",
+  "prepmap.legend_diary": "wenig Sicherheit → viel Sicherheit · die Größe spiegelt die Schwierigkeit (1–5), einstellbar unter ",
   "prepmap.meta": {
     "one": "%d Stück · Größe = Schwierigkeit · Farbe = Stand",
     "other": "%d Stücke · Größe = Schwierigkeit · Farbe = Stand"
   },
   "prepmap.tile_conf": "Sicherheit %s/5",
   "prepmap.tile_difficulty": "Schwierigkeit %d/5",
-  "prepmap.title": "Vorbereitungskarte",
-  "readiness.note": "Durchschnittliche Vorbereitung der mit jedem Probespiel verknüpften Stücke.",
-  "readiness.title": "Bereitschaft je Probespiel",
+  "prepmap.title": "Sicherheitskarte",
+  "readiness.note": "Durchschnittliche Sicherheit der mit jedem Probespiel verknüpften Stücke.",
+  "readiness.title": "Sicherheit je Probespiel",
   "resources.count": {
     "one": "%d Ressource",
     "other": "%d Ressourcen"
