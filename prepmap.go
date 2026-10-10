@@ -36,7 +36,7 @@ type prepSession struct {
 }
 
 // prepSessions returns all sessions for a piece, newest first.
-// concorsoPrepStats computes the mean preparation of every concorso over
+// concorsoPrepStats computes the mean preparation of every audition over
 // all its active pieces, as a 0..4 level and a 0..1 score.
 func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
@@ -54,7 +54,7 @@ func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 	sums := map[int64]float64{}
 	counts := map[int64]int{}
 	for _, p := range pieces {
-		for _, c := range p.Concorsi {
+		for _, c := range p.Auditions {
 			sums[c.ID] += scores[p.ID]
 			counts[c.ID]++
 		}
@@ -68,7 +68,7 @@ func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 	return levels, means, nil
 }
 
-// stampPrepLevels fills Level on each piece and on its linked concorsi
+// stampPrepLevels fills Level on each piece and on its linked auditions
 // with today's preparation levels, for cards and chips.
 func (a *App) stampPrepLevels(pieces []Piece) error {
 	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
@@ -88,7 +88,7 @@ func (a *App) stampPrepLevels(pieces []Piece) error {
 	sums := map[int64]float64{}
 	counts := map[int64]int{}
 	for _, p := range all {
-		for _, c := range p.Concorsi {
+		for _, c := range p.Auditions {
 			sums[c.ID] += scores[p.ID]
 			counts[c.ID]++
 		}
@@ -102,17 +102,17 @@ func (a *App) stampPrepLevels(pieces []Piece) error {
 	for i := range pieces {
 		pieces[i].Level = byPiece[pieces[i].ID]
 		pieces[i].Prep = scores[pieces[i].ID]
-		for j := range pieces[i].Concorsi {
-			pieces[i].Concorsi[j].Level = levels[pieces[i].Concorsi[j].ID]
-			pieces[i].Concorsi[j].Prep = means[pieces[i].Concorsi[j].ID]
+		for j := range pieces[i].Auditions {
+			pieces[i].Auditions[j].Level = levels[pieces[i].Auditions[j].ID]
+			pieces[i].Auditions[j].Prep = means[pieces[i].Auditions[j].ID]
 		}
 	}
 	return nil
 }
 
-// pieceInConcorsi reports whether p is linked to any selected concorso.
+// pieceInConcorsi reports whether p is linked to any selected audition.
 func pieceInConcorsi(p Piece, selected map[int64]bool) bool {
-	for _, c := range p.Concorsi {
+	for _, c := range p.Auditions {
 		if selected[c.ID] {
 			return true
 		}
@@ -239,7 +239,7 @@ func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
 }
 
 // prepTilesFor builds the preparation map tiles; when selected is
-// non-nil only pieces linked to at least one selected concorso appear.
+// non-nil only pieces linked to at least one selected audition appear.
 func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]bool) ([]prepTile, error) {
 	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {

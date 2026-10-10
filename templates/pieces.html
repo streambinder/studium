@@ -7,7 +7,7 @@
 
 <section class="panel reveal">
 <div class="section-head"><h2>Aggiungi un pezzo</h2></div>
-<form method="post" action="/pezzi">
+<form method="post" action="/pieces">
 <div class="row">
 <label>Compositore <input type="text" name="composer" required></label>
 <label>Opera <input type="text" name="work" required></label>
@@ -21,19 +21,19 @@
 </select></label>
 </div>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
-<fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
+<fieldset><legend>Auditions</legend>
+{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
 </fieldset>
 <button type="submit">Aggiungi</button>
 </form>
 </section>
 
-<form method="get" action="/pezzi" class="filters panel reveal">
+<form method="get" action="/pieces" class="filters panel reveal">
 <label class="search">Cerca <input type="search" name="q" value="{{.Search}}" placeholder="compositore, opera, movimento, concorso…" enterkeyhint="search" onchange="this.form.submit()"></label>
-<label>Concorso
-<select name="concorso" onchange="this.form.submit()">
+<label>Audition
+<select name="audition" onchange="this.form.submit()">
 <option value="0">tutti</option>
-{{range .Concorsi}}<option value="{{.ID}}" {{if eq $.FilterConcorso .ID}}selected{{end}}>{{.Name}}</option>{{end}}
+{{range .Auditions}}<option value="{{.ID}}" {{if eq $.FilterConcorso .ID}}selected{{end}}>{{.Name}}</option>{{end}}
 </select></label>
 <label>Tipo
 <select name="kind" onchange="this.form.submit()">
@@ -49,13 +49,13 @@
 <article class="card reveal {{if .Archived}}archived{{end}}">
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong>
 {{if .Archived}}<span class="badge muted">archiviato</span>
 {{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
-{{if .Concorsi}}<div class="chips">
-{{range $c := .Concorsi}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct $c.Prep}}%"><span class="prep-dot lv{{$c.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct $c.Prep}}%</span></span></span>{{end}}
+{{if .Auditions}}<div class="chips">
+{{range $c := .Auditions}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct $c.Prep}}%"><span class="prep-dot lv{{$c.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct $c.Prep}}%</span></span></span>{{end}}
 </div>{{end}}
 </article>
 {{else}}

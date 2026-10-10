@@ -223,7 +223,7 @@ func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(rows) != 1 {
-		t.Fatalf("past concorso should be excluded, got %d rows", len(rows))
+		t.Fatalf("past audition should be excluded, got %d rows", len(rows))
 	}
 	r := rows[0]
 	if r.Name != "Futuro" || r.Pieces != 2 || r.Days <= 0 {

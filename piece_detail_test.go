@@ -40,7 +40,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 	}
 	a := &App{db: db}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /diario/pezzo/{id}", a.handlePezzoDetail)
+	mux.HandleFunc("GET /diary/piece/{id}", a.handlePieceDetail)
 	get := func(path string) (int, string) {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rec := httptest.NewRecorder()
@@ -48,7 +48,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 		return rec.Code, rec.Body.String()
 	}
 
-	code, body := get("/diario/pezzo/1")
+	code, body := get("/diary/piece/1")
 	if code != http.StatusOK {
 		t.Fatalf("piece 1: want 200, got %d", code)
 	}
@@ -58,7 +58,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 		}
 	}
 
-	code, body = get("/diario/pezzo/2")
+	code, body = get("/diary/piece/2")
 	if code != http.StatusOK {
 		t.Fatalf("piece 2: want 200, got %d", code)
 	}
@@ -66,7 +66,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 		t.Fatalf("piece 2: want the no-upcoming note")
 	}
 
-	code, body = get("/diario/pezzo/3")
+	code, body = get("/diary/piece/3")
 	if code != http.StatusOK {
 		t.Fatalf("piece 3: want 200, got %d", code)
 	}

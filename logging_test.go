@@ -18,8 +18,8 @@ func TestLogRequests(t *testing.T) {
 	h := logRequests(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 	}))
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/pezzi", nil))
-	if !strings.Contains(buf.String(), "GET /pezzi -> 418") {
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/pieces", nil))
+	if !strings.Contains(buf.String(), "GET /pieces -> 418") {
 		t.Fatalf("missing request line, got %q", buf.String())
 	}
 

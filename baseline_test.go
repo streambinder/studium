@@ -24,7 +24,7 @@ func TestSetValutazione(t *testing.T) {
 	}
 	a := &App{db: db}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /pezzi/{id}/valutazione", a.handleSetValutazione)
+	mux.HandleFunc("POST /pieces/{id}/baseline", a.handleSetBaseline)
 
 	post := func(path, body string) int {
 		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
@@ -33,7 +33,7 @@ func TestSetValutazione(t *testing.T) {
 		mux.ServeHTTP(rec, req)
 		return rec.Code
 	}
-	if code := post("/pezzi/1/valutazione", "confidence=4"); code != http.StatusNoContent {
+	if code := post("/pieces/1/baseline", "confidence=4"); code != http.StatusNoContent {
 		t.Fatalf("set 4: want 204, got %d", code)
 	}
 	var minutes, conf int
@@ -44,7 +44,7 @@ func TestSetValutazione(t *testing.T) {
 	if minutes != 0 || conf != 4 || note != "baseline" {
 		t.Fatalf("want 0-minute baseline with confidence 4, got minutes=%d confidence=%d note=%q", minutes, conf, note)
 	}
-	if code := post("/pezzi/1/valutazione", "confidence=99"); code != http.StatusNoContent {
+	if code := post("/pieces/1/baseline", "confidence=99"); code != http.StatusNoContent {
 		t.Fatalf("clamp: want 204, got %d", code)
 	}
 	if err := db.QueryRow(`SELECT confidence FROM sessions WHERE piece_id=1 ORDER BY id DESC LIMIT 1`).Scan(&conf); err != nil {
@@ -53,7 +53,7 @@ func TestSetValutazione(t *testing.T) {
 	if conf != 5 {
 		t.Fatalf("clamp: want confidence 5, got %d", conf)
 	}
-	if code := post("/pezzi/42/valutazione", "confidence=2"); code != http.StatusNotFound {
+	if code := post("/pieces/42/baseline", "confidence=2"); code != http.StatusNotFound {
 		t.Fatalf("unknown piece: want 404, got %d", code)
 	}
 }

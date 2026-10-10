@@ -63,13 +63,13 @@ func TestStampPrepLevels(t *testing.T) {
 	if haydn.Prep != 0 {
 		t.Fatalf("never practiced: want prep 0, got %v", haydn.Prep)
 	}
-	if len(bach.Concorsi) != 1 {
-		t.Fatalf("want 1 concorso on piece, got %d", len(bach.Concorsi))
+	if len(bach.Auditions) != 1 {
+		t.Fatalf("want 1 audition on piece, got %d", len(bach.Auditions))
 	}
-	if bach.Concorsi[0].Level < 1 || bach.Concorsi[0].Level > bach.Level {
-		t.Fatalf("concorso mean level should be between the extremes, got %d", bach.Concorsi[0].Level)
+	if bach.Auditions[0].Level < 1 || bach.Auditions[0].Level > bach.Level {
+		t.Fatalf("audition mean level should be between the extremes, got %d", bach.Auditions[0].Level)
 	}
-	if bach.Concorsi[0].Prep <= 0 || bach.Concorsi[0].Prep >= bach.Prep {
-		t.Fatalf("concorso mean prep should be the average of its pieces, got %v", bach.Concorsi[0].Prep)
+	if bach.Auditions[0].Prep <= 0 || bach.Auditions[0].Prep >= bach.Prep {
+		t.Fatalf("audition mean prep should be the average of its pieces, got %v", bach.Auditions[0].Prep)
 	}
 }

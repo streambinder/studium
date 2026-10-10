@@ -7,7 +7,7 @@
 
 {{if .Chips}}
 <div class="chips map-filters">
-<a class="chip{{if .TuttiOn}} on{{end}}" href="/diario">Tutti</a>
+<a class="chip{{if .TuttiOn}} on{{end}}" href="/diary">Tutti</a>
 {{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></a>{{end}}
 </div>
 {{end}}
@@ -16,19 +16,19 @@
 <div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
 <div class="prepmap desk panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
 <div class="ptiles">
-{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diario/pezzo/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
+{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
 <div class="prepmap mob panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
 <div class="ptiles">
-{{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diario/pezzo/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
+{{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
 <div class="preplegend reveal">
 <span class="preplegend-scale"><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i></span>
-<span>da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in <a href="/pezzi">Pezzi</a></span>
+<span>da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in <a href="/pieces">Pezzi</a></span>
 </div>
 </section>
 {{else if .Filtered}}
@@ -37,7 +37,7 @@
 
 <div class="stack">
 {{range .Days}}
-<a class="card reveal day-link" href="/diario/giorno/{{.Date}}">
+<a class="card reveal day-link" href="/diary/day/{{.Date}}">
 <div class="day-row">
 <span class="day-dot" aria-hidden="true"></span>
 <span class="day-date">{{dateIT .Date}}</span>

@@ -9,7 +9,7 @@
 {{range .Entries}}
 <article class="card reveal">
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
-<div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.PieceID}}">{{.Title}}</a></strong>
+<div class="card-head"><strong><a class="card-link" href="/diary/piece/{{.PieceID}}">{{.Title}}</a></strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
@@ -26,12 +26,12 @@
 <article class="card plan-card skipped-card reveal">
 <span class="badge muted done-corner">{{if .Auto}}saltato dal piano{{else}}saltato{{end}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
 </article>
 {{end}}
 </div>
 {{end}}
-<p><a href="/diario">← torna al diario</a></p>
+<p><a href="/diary">← torna al diario</a></p>
 {{end}}

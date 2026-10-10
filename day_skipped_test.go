@@ -45,10 +45,10 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 		}
 	}
 	a := &App{db: db}
-	req := httptest.NewRequest(http.MethodGet, "/diario/giorno/2026-10-05", nil)
+	req := httptest.NewRequest(http.MethodGet, "/diary/day/2026-10-05", nil)
 	req.SetPathValue("date", "2026-10-05")
 	rec := httptest.NewRecorder()
-	a.handleDiarioGiorno(rec, req)
+	a.handleDiaryDay(rec, req)
 	body := rec.Body.String()
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d body %.200s", rec.Code, body)
@@ -115,10 +115,10 @@ func TestDiarioGiornoOnlySkipsHasNoEmptyState(t *testing.T) {
 		}
 	}
 	a := &App{db: db}
-	req := httptest.NewRequest(http.MethodGet, "/diario/giorno/2026-10-05", nil)
+	req := httptest.NewRequest(http.MethodGet, "/diary/day/2026-10-05", nil)
 	req.SetPathValue("date", "2026-10-05")
 	rec := httptest.NewRecorder()
-	a.handleDiarioGiorno(rec, req)
+	a.handleDiaryDay(rec, req)
 	body := rec.Body.String()
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d body %.200s", rec.Code, body)

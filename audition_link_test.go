@@ -56,7 +56,7 @@ func TestConcorsoLinksCRUD(t *testing.T) {
 	if len(links) != 1 || links[0].Label != "Parti" {
 		t.Fatalf("want only Parti left, got %+v", links)
 	}
-	// Deleting through another concorso must not touch the link.
+	// Deleting through another audition must not touch the link.
 	if err := a.addConcorsoLink(1, "Extra", "https://example.org/x"); err != nil {
 		t.Fatal(err)
 	}
@@ -66,6 +66,6 @@ func TestConcorsoLinksCRUD(t *testing.T) {
 	}
 	links, _ = a.concorsoLinks(1)
 	if len(links) != 2 {
-		t.Fatalf("cross-concorso delete leaked: %+v", links)
+		t.Fatalf("cross-audition delete leaked: %+v", links)
 	}
 }

@@ -18,10 +18,10 @@ func TestParseConcorsoFilter(t *testing.T) {
 }
 
 func TestConcorsoFilterHref(t *testing.T) {
-	if got := concorsoFilterHref(map[int64]bool{}); got != "/diario" {
+	if got := auditionFilterHref(map[int64]bool{}); got != "/diary" {
 		t.Fatalf("empty selection: got %q", got)
 	}
-	if got := concorsoFilterHref(map[int64]bool{3: true, 1: true}); got != "/diario?c=1,3" {
+	if got := auditionFilterHref(map[int64]bool{3: true, 1: true}); got != "/diary?c=1,3" {
 		t.Fatalf("two selections sorted: got %q", got)
 	}
 }
@@ -64,13 +64,13 @@ func TestPrepTilesForFiltersByConcorso(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(roma) != 2 {
-		t.Fatalf("concorso 1: want 2 tiles, got %d", len(roma))
+		t.Fatalf("audition 1: want 2 tiles, got %d", len(roma))
 	}
 	both, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true, 2: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(both) != 3 {
-		t.Fatalf("concorsi 1+2 (union): want 3 tiles, got %d", len(both))
+		t.Fatalf("auditions 1+2 (union): want 3 tiles, got %d", len(both))
 	}
 }

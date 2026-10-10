@@ -18,8 +18,8 @@ func DefaultCoeffs() Coeffs {
 
 // ScoreInput carries everything the formula needs for one piece on one day.
 type ScoreInput struct {
-	Weights    []int   // weights of the piece's upcoming concorsi (non-empty)
-	Days       int     // days until the nearest upcoming concorso
+	Weights    []int   // weights of the piece's upcoming auditions (non-empty)
+	Days       int     // days until the nearest upcoming audition
 	Confidence float64 // latest rated confidence 1..5 (default 2.5 when never rated)
 	SinceDays  int     // days since last practiced session with minutes>0 (default 30)
 	Difficulty int     // piece difficulty 1..5 (values outside count as 1)
@@ -27,7 +27,7 @@ type ScoreInput struct {
 
 // ScoreBreakdown is the explainable result of the formula.
 type ScoreBreakdown struct {
-	Base    float64 // Σ weights of upcoming concorsi
+	Base    float64 // Σ weights of upcoming auditions
 	Urgency float64 // 1 + k·max(0, 1 − days/horizon), horizon widened by difficulty
 	Need    float64 // 1 + (5 − confidence)/5
 	Recency float64 // 1 + min(since/7, cap)
@@ -37,7 +37,7 @@ type ScoreBreakdown struct {
 }
 
 // ComputeScore applies the daily-score formula. Weights must be non-empty:
-// pieces with no upcoming concorso are excluded from the daily plan upstream.
+// pieces with no upcoming audition are excluded from the daily plan upstream.
 func ComputeScore(in ScoreInput, c Coeffs) ScoreBreakdown {
 	var base float64
 	for _, w := range in.Weights {

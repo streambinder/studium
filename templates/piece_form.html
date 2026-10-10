@@ -4,7 +4,7 @@
 <h1>Modifica pezzo</h1>
 </div>
 <section class="panel reveal">
-<form method="post" action="/pezzi/{{.Piece.ID}}/modifica">
+<form method="post" action="/pieces/{{.Piece.ID}}/edit">
 <div class="row">
 <label>Compositore <input type="text" name="composer" value="{{.Piece.Composer}}" required></label>
 <label>Opera <input type="text" name="work" value="{{.Piece.Work}}" required></label>
@@ -18,12 +18,12 @@
 </select></label>
 </div>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}</output></label>
-<fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" value="{{index $.Excerpt .ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
+<fieldset><legend>Auditions</legend>
+{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" value="{{index $.Excerpt .ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
 </fieldset>
 <div class="row btns">
 <button type="submit">Salva</button>
-<a class="btn secondary" href="/pezzi">Annulla</a>
+<a class="btn secondary" href="/pieces">Annulla</a>
 </div>
 </form>
 </section>

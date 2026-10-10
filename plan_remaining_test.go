@@ -115,7 +115,7 @@ func TestSessionSaveClearsSkipMarkers(t *testing.T) {
 	a := &App{db: db}
 	post := func(piece, minutes string) {
 		form := url.Values{"piece_id": {piece}, "minutes": {minutes}, "confidence": {"3"}}
-		req := httptest.NewRequest(http.MethodPost, "/sessione", strings.NewReader(form.Encode()))
+		req := httptest.NewRequest(http.MethodPost, "/session", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rec := httptest.NewRecorder()
 		a.handleSession(rec, req)

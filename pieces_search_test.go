@@ -8,7 +8,7 @@ import (
 )
 
 // The free-text search matches every text field of the piece, plus the
-// names and excerpts of its concorsi, case-insensitively.
+// names and excerpts of its auditions, case-insensitively.
 func TestListPiecesSearch(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
@@ -38,7 +38,7 @@ func TestListPiecesSearch(t *testing.T) {
 		{"strauss", 1}, // composer
 		{"DON", 1},     // work, case-insensitive
 		{"iii mov", 2}, // movement
-		{"cecilia", 1}, // concorso name matches both, first is Strauss
+		{"cecilia", 1}, // audition name matches both, first is Strauss
 		{"scherzo", 2}, // excerpt
 		{"excerpt", 1}, // kind matches both, first is Strauss
 		{"inesistente", 0},

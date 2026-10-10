@@ -1,13 +1,13 @@
 {{define "content"}}
 <div class="page-head">
 <span class="overline">Obiettivi</span>
-<h1>Concorsi</h1>
+<h1>Auditions</h1>
 <p class="meta">Le priorità (1–5) entrano nella formula del piano giornaliero. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico. Tocca un concorso per aprirne il dettaglio.</p>
 </div>
 
 <section class="panel reveal">
 <div class="section-head"><h2>Nuovo concorso</h2></div>
-<form method="post" action="/concorsi">
+<form method="post" action="/auditions">
 <div class="row">
 <label>Nome <input type="text" name="name" required placeholder="es. Teatro X — Violoncello di fila"></label>
 </div>
@@ -29,7 +29,7 @@
 </div>
 <button type="submit">Aggiungi</button>
 </form>
-<p class="meta">I link sono facoltativi: dal dettaglio del concorso potrai aggiungerne o rimuoverne altri in qualsiasi momento. I pezzi si collegano dalla pagina <a href="/pezzi">Pezzi</a> (modifica).</p>
+<p class="meta">I link sono facoltativi: dal dettaglio del concorso potrai aggiungerne o rimuoverne altri in qualsiasi momento. I pezzi si collegano dalla pagina <a href="/pieces">Pezzi</a> (modifica).</p>
 </section>
 
 <div class="stack">
@@ -37,7 +37,7 @@
 <article class="card reveal {{if .Archived}}archived{{end}}">
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/concorsi/{{.ID}}">{{.Name}}</a></strong>
+<strong><a class="card-link" href="/auditions/{{.ID}}">{{.Name}}</a></strong>
 {{if .Archived}}<span class="badge muted">archiviato</span>
 {{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
 </div>

@@ -29,9 +29,9 @@
 <div class="section-head"><h2>Disponibilità di oggi</h2></div>
 <ul class="windows">
 {{range .Free}}<li class="free">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}}
-<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
+<form method="post" action="/availability/delete" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
 {{range .Busy}}<li class="busy">{{hhmm .StartMin}}–{{hhmm .EndMin}}{{if .Label}} · {{.Label}}{{end}} <em>(impegno)</em>
-<form method="post" action="/disponibilita/elimina" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
+<form method="post" action="/availability/delete" class="inline"><input type="hidden" name="id" value="{{.ID}}"><button class="link" type="submit" aria-label="elimina fascia">✕</button></form></li>{{end}}
 </ul>
 <details><summary>Aggiungi una fascia</summary><div class="details-body">{{template "availForm" .}}</div></details>
 </section>
@@ -40,7 +40,7 @@
 <section class="panel reveal">
 <details><summary>Registra una sessione a mano</summary>
 <div class="details-body">
-<form method="post" action="/sessione" class="checkin">
+<form method="post" action="/session" class="checkin">
 <div class="timer" data-manual="1" data-day="{{$.Date}}">
 <span class="timer-display">0:00</span>
 <button type="button" class="secondary timer-toggle">Avvia timer</button>
@@ -70,9 +70,9 @@
 <p class="empty-note">Per costruire il piano giusto, indica quanto conosci già ogni pezzo: <strong>0 = mai toccato</strong>, 5 = sicuro. È il tuo punto di partenza: potrai aggiornarlo quando vuoi registrando una sessione da 0 minuti.</p>
 {{range .Baseline}}
 <article class="card base-card reveal">
-<div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
+<div class="card-head"><strong><a class="card-link" href="/diary/piece/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
-{{if .Concorsi}}<div class="chips">{{range .Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
+{{if .Auditions}}<div class="chips">{{range .Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
 <div class="diff-row"><label>Sicurezza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Da dichiarare</output></label><button type="button" class="base-save" data-id="{{.ID}}" disabled>Salva</button><span class="diff-state" aria-live="polite"></span></div>
 </article>
 {{end}}
@@ -93,7 +93,7 @@
     s.addEventListener('input', function() { out.textContent = label(s.value); btn.disabled = false; });
     btn.addEventListener('click', function() {
       btn.disabled = true;
-      fetch('/pezzi/' + s.dataset.id + '/valutazione', {
+      fetch('/pieces/' + s.dataset.id + '/baseline', {
         method: 'POST',
         body: new URLSearchParams({confidence: s.value})
       }).then(function(r) {
@@ -118,7 +118,7 @@
 {{if .NoBudget}}
 <section class="panel reveal"><p class="empty">Oggi hai solo impegni: nessun tempo di studio. Buona giornata lo stesso 🎻</p></section>
 {{else if not .Items}}
-<section class="panel reveal"><p class="empty">Nessun pezzo nel piano di oggi: concorsi conclusi, pezzi archiviati, oppure il tempo di studio di oggi è già esaurito. Vedi <a href="/pezzi">Pezzi</a>.</p></section>
+<section class="panel reveal"><p class="empty">Nessun pezzo nel piano di oggi: concorsi conclusi, pezzi archiviati, oppure il tempo di studio di oggi è già esaurito. Vedi <a href="/pieces">Pezzi</a>.</p></section>
 {{else}}
 {{if .OpenCount}}
 <section>
@@ -128,7 +128,7 @@
 <span class="plan-rank" aria-hidden="true"></span>
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
 {{if .Logged}}<span class="badge done">✓ {{dur .Logged}}</span>{{end}}
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{if .Piece.Movement}}<span>{{.Piece.Movement}}</span>{{end}}</div>
@@ -162,8 +162,8 @@
 <label>Metronomo (BPM) <input type="number" name="bpm" min="1" max="400" placeholder="opzionale"></label>
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
 <div class="row btns">
-<button type="submit" formaction="/sessione">Registra</button>
-<button type="submit" formaction="/sessione/salta" class="secondary skip-btn">Salta</button>
+<button type="submit" formaction="/session">Registra</button>
+<button type="submit" formaction="/session/skip" class="secondary skip-btn">Salta</button>
 </div>
 </form>
 </article>
@@ -180,7 +180,7 @@
 <article class="card plan-card done-card reveal">
 <span class="badge done done-corner">✓ {{dur .Logged}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.Piece.ID}}">{{.Piece.Composer}} — {{.Piece.Work}}</a></strong>
 </div>
 <div class="meta movement-row"><span class="badge kind">{{.Piece.Kind}}</span>{{range .Upcoming}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
 </article>
@@ -189,18 +189,18 @@
 <article class="card plan-card done-card reveal">
 <span class="badge done done-corner">✓ {{dur .Logged}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
 </article>
 {{end}}
 {{range .Skipped}}
 <article class="card plan-card skipped-card reveal">
 <span class="badge muted done-corner">{{if .Auto}}saltato dal piano{{else}}saltato{{end}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
 <div class="card-head">
-<strong><a class="card-link" href="/diario/pezzo/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
+<strong><a class="card-link" href="/diary/piece/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
 </article>
 {{end}}
 </section>

@@ -25,8 +25,8 @@ func forecastTestApp(t *testing.T, seed func(db *sql.DB, today string)) (*App, s
 	return &App{db: db}, today
 }
 
-// A piece locked out by a nearer concorso enters the top 8 the day
-// after that concorso is held, when its pieces leave the ranking.
+// A piece locked out by a nearer audition enters the top 8 the day
+// after that audition is held, when its pieces leave the ranking.
 func TestForecastEntryAfterRivalConcorso(t *testing.T) {
 	day := func(today string, n int) string {
 		d, _ := time.Parse("2006-01-02", today)
@@ -66,11 +66,11 @@ func TestForecastEntryAfterRivalConcorso(t *testing.T) {
 		t.Fatalf("entry score: want > 0, got %v", score)
 	}
 	if !strings.Contains(why, "Vicino") {
-		t.Fatalf("entry reason should name the rival concorso, got %q", why)
+		t.Fatalf("entry reason should name the rival audition, got %q", why)
 	}
 }
 
-// A piece whose rivals share its only concorso and stay ahead on need
+// A piece whose rivals share its only audition and stay ahead on need
 // never enters the top 8 before the audition.
 func TestForecastNeverEnters(t *testing.T) {
 	day := func(today string, n int) string {

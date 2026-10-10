@@ -3,7 +3,7 @@
 <section class="panel reveal">
 <div class="section-head"><h2>Prontezza per concorso</h2></div>
 {{range .Readiness}}
-<a class="ready-link" href="/concorsi/{{.ID}}">
+<a class="ready-link" href="/auditions/{{.ID}}">
 <div class="ready-row">
 <div class="ready-head"><span class="ready-name">{{.Name}}</span><span class="meta">{{dateIT .Date}} · tra {{.Days}} giorn{{if eq .Days 1}}o{{else}}i{{end}} · {{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span><span class="ready-pct">{{.Pct}}%</span></div>
 <div class="budget-bar"><span style="--w: {{.Pct}}%"></span></div>
@@ -16,7 +16,7 @@
 {{end}}
 
 {{define "availForm"}}
-<form method="post" action="/disponibilita" class="avail-form">
+<form method="post" action="/availability" class="avail-form">
 <input type="hidden" name="date" value="{{.Date}}">
 <div class="row">
 <label>Dalle <input type="time" name="start" value="09:00" required></label>

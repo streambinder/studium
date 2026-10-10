@@ -10,7 +10,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type Concorso struct {
+type Audition struct {
 	ID       int64
 	Name     string
 	Date     string // YYYY-MM-DD
@@ -35,8 +35,8 @@ type Piece struct {
 	Kind       string // 'excerpt' | 'solo'
 	Difficulty int    // 1..5, user-calibrated; drives the prep-map tile size
 	Archived   bool
-	Concorsi   []Concorso
-	HasActive  bool    // at least one non-archived concorso with date >= today
+	Auditions  []Audition
+	HasActive  bool    // at least one non-archived audition with date >= today
 	Level      int     // preparation level 0..4, stamped on demand (not persisted)
 	Prep       float64 // preparation score 0..1, stamped on demand (not persisted)
 }
@@ -157,7 +157,7 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate difficulty: %w", err)
 		}
 	}
-	// piece_audition.excerpt holds the excerpt each concorso asks for; the
+	// piece_audition.excerpt holds the excerpt each audition asks for; the
 	// column started out as notes and is renamed when present.
 	if err := ensureLinkExcerpt(db); err != nil {
 		return err
@@ -310,16 +310,16 @@ func daysBetween(a, b string) (int, error) {
 	return int(tb.Sub(ta).Hours() / 24), nil
 }
 
-// scanConcorsi reads all concorsi from rows and closes them.
-func scanConcorsi(rows *sql.Rows) ([]Concorso, error) {
-	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
-		var c Concorso
+// scanAuditions reads all auditions from rows and closes them.
+func scanAuditions(rows *sql.Rows) ([]Audition, error) {
+	return collect(rows, func(rows *sql.Rows) (Audition, error) {
+		var c Audition
 		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived)
 		return c, err
 	})
 }
 
-func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
+func (a *App) listAuditions(includeArchived bool) ([]Audition, error) {
 	q := `SELECT id, name, audition_date, weight, archived_at IS NOT NULL
 		FROM auditions`
 	if !includeArchived {
@@ -330,53 +330,53 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 	if err != nil {
 		return nil, err
 	}
-	return scanConcorsi(rows)
+	return scanAuditions(rows)
 }
 
-func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
+func (a *App) pieceConcorsi(pieceID int64) ([]Audition, error) {
 	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.excerpt
 		FROM auditions c JOIN piece_audition pc ON pc.audition_id=c.id
 		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
 	if err != nil {
 		return nil, err
 	}
-	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
-		var c Concorso
+	return collect(rows, func(rows *sql.Rows) (Audition, error) {
+		var c Audition
 		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Excerpt)
 		return c, err
 	})
 }
 
-// ConcorsoLink is one external resource attached to a concorso (official
+// AuditionLink is one external resource attached to a audition (official
 // notice, orchestral parts PDF, ...).
-type ConcorsoLink struct {
+type AuditionLink struct {
 	ID         int64
-	ConcorsoID int64
+	AuditionID int64
 	Label      string
 	URL        string
 }
 
-func (a *App) concorsoLinks(concorsoID int64) ([]ConcorsoLink, error) {
+func (a *App) concorsoLinks(auditionID int64) ([]AuditionLink, error) {
 	rows, err := a.db.Query(`SELECT id, audition_id, label, url FROM audition_links
-		WHERE audition_id=? ORDER BY id`, concorsoID)
+		WHERE audition_id=? ORDER BY id`, auditionID)
 	if err != nil {
 		return nil, err
 	}
-	return collect(rows, func(rows *sql.Rows) (ConcorsoLink, error) {
-		var l ConcorsoLink
-		err := rows.Scan(&l.ID, &l.ConcorsoID, &l.Label, &l.URL)
+	return collect(rows, func(rows *sql.Rows) (AuditionLink, error) {
+		var l AuditionLink
+		err := rows.Scan(&l.ID, &l.AuditionID, &l.Label, &l.URL)
 		return l, err
 	})
 }
 
-func (a *App) addConcorsoLink(concorsoID int64, label, url string) error {
+func (a *App) addConcorsoLink(auditionID int64, label, url string) error {
 	_, err := a.db.Exec(`INSERT INTO audition_links(audition_id, label, url) VALUES(?,?,?)`,
-		concorsoID, label, url)
+		auditionID, label, url)
 	return err
 }
 
-func (a *App) deleteConcorsoLink(concorsoID, linkID int64) error {
-	_, err := a.db.Exec(`DELETE FROM audition_links WHERE id=? AND audition_id=?`, linkID, concorsoID)
+func (a *App) deleteConcorsoLink(auditionID, linkID int64) error {
+	_, err := a.db.Exec(`DELETE FROM audition_links WHERE id=? AND audition_id=?`, linkID, auditionID)
 	return err
 }
 
@@ -399,7 +399,7 @@ func closeRowsErr(rows *sql.Rows, err error) error {
 	return err
 }
 
-// collect scans every row with scan, then closes rows. Concorsi are fetched
+// collect scans every row with scan, then closes rows. Auditions are fetched
 // by the caller afterwards: the pool is limited to a single connection and
 // nested queries would deadlock.
 func collect[T any](rows *sql.Rows, scan func(*sql.Rows) (T, error)) ([]T, error) {
@@ -425,16 +425,16 @@ func scanPieces(rows *sql.Rows) ([]Piece, error) {
 
 // listPieces returns the pieces matching the filters; query is a
 // free-text search over every text field of the piece (composer, work,
-// movement, kind) plus its concorsi names and excerpts.
-func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool, query string) ([]Piece, error) {
+// movement, kind) plus its auditions names and excerpts.
+func (a *App) listPieces(auditionID int64, kind string, includeArchived bool, query string) ([]Piece, error) {
 	q := `SELECT DISTINCT p.id, p.composer, p.work, p.movement, p.kind, p.difficulty,
 		p.archived_at IS NOT NULL FROM pieces p`
 	args := []any{}
 	where := ""
-	if concorsoID > 0 {
+	if auditionID > 0 {
 		q += ` JOIN piece_audition pc ON pc.piece_id=p.id`
 		where += ` AND pc.audition_id=?`
-		args = append(args, concorsoID)
+		args = append(args, auditionID)
 	}
 	if kind == kindExcerpt || kind == kindSolo {
 		where += ` AND p.kind=?`
@@ -465,7 +465,7 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool, qu
 		if err != nil {
 			return nil, err
 		}
-		out[i].Concorsi = cs
+		out[i].Auditions = cs
 		for _, c := range cs {
 			if !c.Archived && c.Date >= today {
 				out[i].HasActive = true
@@ -487,7 +487,7 @@ func (a *App) getPiece(id int64) (Piece, error) {
 	if err != nil {
 		return p, err
 	}
-	p.Concorsi = cs
+	p.Auditions = cs
 	return p, nil
 }
 
