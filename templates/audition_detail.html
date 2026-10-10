@@ -32,13 +32,13 @@
 <div class="section-head"><h2>{{t "prepmap.title"}}</h2><span class="meta">{{tp "prepmap.meta" (len .PrepMap)}}</span></div>
 <div class="prepmap desk panel reveal" role="img" aria-label="{{t "prepmap.aria_audition"}}">
 <div class="ptiles">
-{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
+{{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{cssf .X}}% + 3px);top:calc({{cssf .Y}}% + 3px);width:calc({{cssf .W}}% - 6px);height:calc({{cssf .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
 <div class="prepmap mob panel reveal" role="img" aria-label="{{t "prepmap.aria_audition"}}">
 <div class="ptiles">
-{{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
+{{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{cssf .X}}% + 3px);top:calc({{cssf .Y}}% + 3px);width:calc({{cssf .W}}% - 6px);height:calc({{cssf .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>

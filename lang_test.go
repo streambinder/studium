@@ -123,3 +123,41 @@ func TestHomeRendersDetectedLanguage(t *testing.T) {
 		t.Fatal("english home missing its hero")
 	}
 }
+
+// CSS geometry must keep dot decimals in every language: a localized
+// comma inside calc() invalidates the declaration and collapses the
+// preparation map tiles to zero size.
+func TestDiaryTileGeometryUsesDotDecimalsInItalian(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	stmts := []string{
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 30, 4, '')`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	a := &App{db: db}
+	req := httptest.NewRequest(http.MethodGet, "/diary", nil)
+	req.Header.Set("Accept-Language", "it")
+	rec := httptest.NewRecorder()
+	a.handleDiary(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("diary status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "calc(0.0% + 3px)") {
+		t.Error("tile geometry lacks dot decimals in Italian rendering")
+	}
+	if strings.Contains(body, ",0%") || strings.Contains(body, ",6%") {
+		t.Error("tile geometry contains comma decimals in Italian rendering")
+	}
+}

@@ -130,6 +130,9 @@ func urlParts(raw string) urlSplit {
 func tmplFuncs(lang string) template.FuncMap {
 	return template.FuncMap{
 		"f1": func(f float64) string { return decimal(lang, f) },
+		// cssf formats a number for CSS and SVG contexts, where the
+		// decimal separator must always be a dot regardless of language.
+		"cssf": func(f float64) string { return fmt.Sprintf("%.1f", f) },
 		"t": func(key string, args ...any) string {
 			return tr(lang, key, args...)
 		},
