@@ -52,7 +52,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("piece 1: want 200, got %d", code)
 	}
-	for _, want := range []string{"Punteggio di oggi", "base 3.0", "Posizione 1 di 1", "tra i primi 8"} {
+	for _, want := range []string{"Today&#39;s score", "base 3.0", "Position 1 of 1", "in the top 8"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("piece 1: body missing %q", want)
 		}
@@ -62,7 +62,7 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("piece 2: want 200, got %d", code)
 	}
-	if !strings.Contains(body, "Nessun concorso futuro collegato") {
+	if !strings.Contains(body, "No future audition linked") {
 		t.Fatalf("piece 2: want the no-upcoming note")
 	}
 
@@ -70,10 +70,10 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 	if code != http.StatusOK {
 		t.Fatalf("piece 3: want 200, got %d", code)
 	}
-	if !strings.Contains(body, "Oggi è stato saltato") {
+	if !strings.Contains(body, "Skipped today") {
 		t.Fatalf("piece 3: want the skipped note")
 	}
-	if !strings.Contains(body, "Punteggio di oggi") {
+	if !strings.Contains(body, "Today&#39;s score") {
 		t.Fatalf("piece 3: want the score shown even when skipped")
 	}
 }

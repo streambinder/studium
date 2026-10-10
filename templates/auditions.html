@@ -1,48 +1,48 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Obiettivi</span>
-<h1>Auditions</h1>
-<p class="meta">Le priorità (1–5) entrano nella formula del piano giornaliero. I concorsi con data passata escono dal piano da soli e sono marcati <span class="badge done">concluso</span>; quelli archiviati restano solo per lo storico. Tocca un concorso per aprirne il dettaglio.</p>
+<span class="overline">{{t "auditions.overline"}}</span>
+<h1>{{t "nav.auditions"}}</h1>
+<p class="meta">{{t "auditions.intro_a"}}<span class="badge done">{{t "auditions.concluded_badge"}}</span>{{t "auditions.intro_b"}}</p>
 </div>
 
 <section class="panel reveal">
-<div class="section-head"><h2>Nuovo concorso</h2></div>
+<div class="section-head"><h2>{{t "auditions.new_title"}}</h2></div>
 <form method="post" action="/auditions">
 <div class="row">
-<label>Nome <input type="text" name="name" required placeholder="es. Teatro X — Violoncello di fila"></label>
+<label>{{t "field.name"}} <input type="text" name="name" required placeholder="{{t "auditions.name_ph"}}"></label>
 </div>
 <div class="row">
-<label>Data prova <input type="date" name="date" required></label>
-<label>Priorità <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
+<label>{{t "field.date"}} <input type="date" name="date" required></label>
+<label>{{t "field.priority"}} <input type="range" name="weight" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 </div>
 <div class="row">
-<label>Link risorsa <input type="url" name="link_url" placeholder="https://… (bando, PDF passi)"></label>
-<label>Etichetta <input type="text" name="link_label" placeholder="es. Bando"></label>
+<label>{{t "field.link"}} <input type="url" name="link_url" placeholder="{{t "field.link_ph"}}"></label>
+<label>{{t "field.label"}} <input type="text" name="link_label" placeholder="{{t "field.label_notice_ph"}}"></label>
 </div>
 <div class="row">
-<label>Altro link <input type="url" name="link_url" placeholder="https://…"></label>
-<label>Etichetta <input type="text" name="link_label" placeholder="es. Parti orchestrali"></label>
+<label>{{t "field.other_link"}} <input type="url" name="link_url" placeholder="https://..."></label>
+<label>{{t "field.label"}} <input type="text" name="link_label" placeholder="{{t "field.label_scores_ph"}}"></label>
 </div>
 <div class="row">
-<label>Altro link <input type="url" name="link_url" placeholder="https://…"></label>
-<label>Etichetta <input type="text" name="link_label" placeholder=""></label>
+<label>{{t "field.other_link"}} <input type="url" name="link_url" placeholder="https://..."></label>
+<label>{{t "field.label"}} <input type="text" name="link_label" placeholder=""></label>
 </div>
-<button type="submit">Aggiungi</button>
+<button type="submit">{{t "common.add"}}</button>
 </form>
-<p class="meta">I link sono facoltativi: dal dettaglio del concorso potrai aggiungerne o rimuoverne altri in qualsiasi momento. I pezzi si collegano dalla pagina <a href="/pieces">Pezzi</a> (modifica).</p>
+<p class="meta">{{t "auditions.links_note_a"}}<a href="/pieces">{{t "nav.pieces"}}</a>{{t "auditions.links_note_b"}}</p>
 </section>
 
 <div class="stack">
 {{range .Rows}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
-<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/auditions/{{.ID}}">{{.Name}}</a></strong>
-{{if .Archived}}<span class="badge muted">archiviato</span>
-{{else if .Concluded}}<span class="badge done">concluso</span>{{end}}
+{{if .Archived}}<span class="badge muted">{{t "pieces.archived_badge"}}</span>
+{{else if .Concluded}}<span class="badge done">{{t "auditions.concluded_badge"}}</span>{{end}}
 </div>
 <div class="meta">{{dateIT .Date}}</div>
-<div class="meta">{{.Pieces}} pezzi collegati{{if .Links}} · {{.Links}} risors{{if eq .Links 1}}a{{else}}e{{end}}{{end}}</div>
+<div class="meta">{{tp "pieces.linked" .Pieces}}{{if .Links}} · {{tp "resources.count" .Links}}{{end}}</div>
 </article>
 {{end}}
 </div>

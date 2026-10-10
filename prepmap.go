@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -36,10 +35,12 @@ type prepSession struct {
 }
 
 // prepSessions returns all sessions for a piece, newest first.
-// concorsoPrepStats computes the mean preparation of every audition over
+// auditionPrepStats computes the mean preparation of every audition over
 // all its active pieces, as a 0..4 level and a 0..1 score.
-func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
-	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+func (a *App) auditionPrepStats() (map[int64]int, map[int64]float64, error) {
+	// Only levels and scores are read here; tile titles keep the
+	// source language and are discarded by the caller.
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop, "en")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,7 +72,7 @@ func (a *App) concorsoPrepStats() (map[int64]int, map[int64]float64, error) {
 // stampPrepLevels fills Level on each piece and on its linked auditions
 // with today's preparation levels, for cards and chips.
 func (a *App) stampPrepLevels(pieces []Piece) error {
-	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop, "en")
 	if err != nil {
 		return err
 	}
@@ -110,8 +111,8 @@ func (a *App) stampPrepLevels(pieces []Piece) error {
 	return nil
 }
 
-// pieceInConcorsi reports whether p is linked to any selected audition.
-func pieceInConcorsi(p Piece, selected map[int64]bool) bool {
+// pieceInAuditions reports whether p is linked to any selected audition.
+func pieceInAuditions(p Piece, selected map[int64]bool) bool {
 	for _, c := range p.Auditions {
 		if selected[c.ID] {
 			return true
@@ -234,13 +235,13 @@ func prepLevelFromScore(score float64) int {
 
 // prepTiles builds the treemap tiles for every active piece, laid out
 // with the given aspect bias.
-func (a *App) prepTiles(todayStr string, bias float64) ([]prepTile, error) {
-	return a.prepTilesFor(todayStr, bias, nil)
+func (a *App) prepTiles(todayStr string, bias float64, lang string) ([]prepTile, error) {
+	return a.prepTilesFor(todayStr, bias, nil, lang)
 }
 
 // prepTilesFor builds the preparation map tiles; when selected is
 // non-nil only pieces linked to at least one selected audition appear.
-func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]bool) ([]prepTile, error) {
+func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]bool, lang string) ([]prepTile, error) {
 	pieces, err := a.listPieces(0, "", false, "")
 	if err != nil {
 		return nil, err
@@ -251,7 +252,7 @@ func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]boo
 	}
 	tiles := make([]prepTile, 0, len(pieces))
 	for _, p := range pieces {
-		if selected != nil && !pieceInConcorsi(p, selected) {
+		if selected != nil && !pieceInAuditions(p, selected) {
 			continue
 		}
 		sessions, err := a.prepSessions(p.ID)
@@ -264,10 +265,10 @@ func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]boo
 			minutes += s.Minutes
 		}
 		label := strings.TrimSpace(p.Composer + " — " + p.Work)
-		var b strings.Builder
-		fmt.Fprintf(&b, "%s\nDifficoltà %d/5 · %d sessioni · %s", label, p.Difficulty, len(sessions), dur(minutes))
+		title := label + "\n" + tr(lang, "prepmap.tile_difficulty", p.Difficulty) +
+			" · " + trPlural(lang, "sessions.count", len(sessions)) + " · " + dur(minutes)
 		if rated {
-			fmt.Fprintf(&b, " · sicurezza %.1f/5", avgConf)
+			title += " · " + tr(lang, "prepmap.tile_conf", decimal(lang, avgConf))
 		}
 		tiles = append(tiles, prepTile{
 			PieceID:    p.ID,
@@ -279,7 +280,7 @@ func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]boo
 			AvgConf:    avgConf,
 			Rated:      rated,
 			Prep:       score,
-			Title:      b.String(),
+			Title:      title,
 		})
 	}
 	// Biggest and least-prepared first: the eye lands where work is needed.

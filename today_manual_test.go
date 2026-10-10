@@ -40,13 +40,13 @@ func TestTodayManualSessionWithoutAvailability(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d body %.200s", rec.Code, body)
 	}
-	if !strings.Contains(body, "Registra una sessione a mano") {
+	if !strings.Contains(body, "Log a session by hand") {
 		t.Fatal("manual session form missing without availability")
 	}
-	if !strings.Contains(body, "Completati e saltati") {
-		t.Fatal("Completati missing without availability despite a manual session today")
+	if !strings.Contains(body, "Done and skipped") {
+		t.Fatal("Done section missing without availability despite a manual session today")
 	}
-	if !strings.Contains(body, "1 completato") {
+	if !strings.Contains(body, "1 done") {
 		t.Fatal("done count text missing")
 	}
 }

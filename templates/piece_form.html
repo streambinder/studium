@@ -1,29 +1,29 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Repertorio</span>
-<h1>Modifica pezzo</h1>
+<span class="overline">{{t "pieces.overline"}}</span>
+<h1>{{t "piece.edit_title"}}</h1>
 </div>
 <section class="panel reveal">
 <form method="post" action="/pieces/{{.Piece.ID}}/edit">
 <div class="row">
-<label>Compositore <input type="text" name="composer" value="{{.Piece.Composer}}" required></label>
-<label>Opera <input type="text" name="work" value="{{.Piece.Work}}" required></label>
+<label>{{t "field.composer"}} <input type="text" name="composer" value="{{.Piece.Composer}}" required></label>
+<label>{{t "field.work"}} <input type="text" name="work" value="{{.Piece.Work}}" required></label>
 </div>
 <div class="row">
-<label>Movimento <input type="text" name="movement" value="{{.Piece.Movement}}"></label>
-<label>Tipo
+<label>{{t "field.movement"}} <input type="text" name="movement" value="{{.Piece.Movement}}"></label>
+<label>{{t "field.kind"}}
 <select name="kind">
-<option value="excerpt" {{if eq .Piece.Kind "excerpt"}}selected{{end}}>passo d'orchestra</option>
-<option value="solo" {{if eq .Piece.Kind "solo"}}selected{{end}}>solistico</option>
+<option value="excerpt" {{if eq .Piece.Kind "excerpt"}}selected{{end}}>{{t "kind.excerpt_long"}}</option>
+<option value="solo" {{if eq .Piece.Kind "solo"}}selected{{end}}>{{t "kind.solo_long"}}</option>
 </select></label>
 </div>
-<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}</output></label>
-<fieldset><legend>Auditions</legend>
-{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" value="{{index $.Excerpt .ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
+<label>{{t "field.difficulty"}} <input type="range" name="difficulty" min="1" max="5" step="1" value="{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}</output></label>
+<fieldset><legend>{{t "nav.auditions"}}</legend>
+{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" value="{{index $.Excerpt .ID}}" placeholder="{{t "field.excerpt_ph"}}"></div>{{end}}
 </fieldset>
 <div class="row btns">
-<button type="submit">Salva</button>
-<a class="btn secondary" href="/pieces">Annulla</a>
+<button type="submit">{{t "common.save"}}</button>
+<a class="btn secondary" href="/pieces">{{t "common.cancel"}}</a>
 </div>
 </form>
 </section>

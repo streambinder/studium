@@ -53,8 +53,8 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d body %.200s", rec.Code, body)
 	}
-	if !strings.Contains(body, "<h2>Saltati</h2>") {
-		t.Fatal("Saltati heading missing")
+	if !strings.Contains(body, "<h2>Skipped</h2>") {
+		t.Fatal("Skipped heading missing")
 	}
 	if got := strings.Count(body, "skipped-card"); got != 2 {
 		t.Fatalf("want 2 skipped cards, got %d", got)
@@ -75,7 +75,7 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	// But its stale auto-skip marker line is gone: the plan dropped it,
 	// then it was practiced. Only the skipped cards may wear that badge,
 	// and those use the corner form, not the session-line form.
-	if got := strings.Count(body, `<span class="badge muted">saltato dal piano</span>`); got != 0 {
+	if got := strings.Count(body, `<span class="badge muted">skipped by the plan</span>`); got != 0 {
 		t.Fatalf("want no auto-skip session line on practiced pieces, got %d", got)
 	}
 	// A manual skip on a piece practiced anyway stays in the diary:
@@ -83,13 +83,13 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 	if !strings.Contains(body, "Epsilon") || !strings.Contains(body, "15m") {
 		t.Fatal("manually skipped then practiced piece lost its diary entry")
 	}
-	if got := strings.Count(body, `<span class="badge muted">saltato</span>`); got != 1 {
+	if got := strings.Count(body, `<span class="badge muted">skipped</span>`); got != 1 {
 		t.Fatalf("want the manual skip line kept once, got %d", got)
 	}
-	if !strings.Contains(body, "Delta") || !strings.Contains(body, "valutazione") {
+	if !strings.Contains(body, "Delta") || !strings.Contains(body, "assessment") {
 		t.Fatal("valued piece lost its diary entry")
 	}
-	if strings.Contains(body, "Nessuna seduta registrata") {
+	if strings.Contains(body, "No session logged on this day") {
 		t.Fatal("empty state shown despite entries and skips")
 	}
 }
@@ -126,7 +126,7 @@ func TestDiarioGiornoOnlySkipsHasNoEmptyState(t *testing.T) {
 	if got := strings.Count(body, "skipped-card"); got != 1 {
 		t.Fatalf("want 1 skipped card, got %d", got)
 	}
-	if strings.Contains(body, "Nessuna seduta registrata") {
+	if strings.Contains(body, "No session logged on this day") {
 		t.Fatal("empty state shown on a day with only skips")
 	}
 }

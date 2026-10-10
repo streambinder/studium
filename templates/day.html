@@ -1,37 +1,37 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Diario</span>
+<span class="overline">{{t "nav.diary"}}</span>
 <h1>{{dateIT .Date}}</h1>
-<p class="meta">{{dur .Minutes}} registrati · {{.Practiced}} pezz{{if eq .Practiced 1}}o{{else}}i{{end}}</p>
+<p class="meta">{{dur .Minutes}} {{t "day.logged"}} · {{tp "pieces.count" .Practiced}}</p>
 </div>
 
 <div class="stack">
 {{range .Entries}}
 <article class="card reveal">
-<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diary/piece/{{.PieceID}}">{{.Title}}</a></strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>{{end}}
 </div>
 {{if .Movement}}<div class="meta">{{.Movement}}</div>{{end}}
-{{range .Sessions}}<div class="meta session-line">{{if eq .Note "skipped"}}<span class="badge muted">saltato</span>{{else if eq .Note "auto-skipped"}}<span class="badge muted">saltato dal piano</span>{{else if eq .Note "postponed"}}<span class="badge pin">rimandato</span>{{else if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{if gt .Confidence 0}} · sicurezza {{.Confidence}}/5{{end}}{{else}}{{if gt .Minutes 0}}{{dur .Minutes}}{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}sicurezza {{.Confidence}}/5{{end}}{{if .BPM.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}metronomo {{.BPM.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .BPM.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
+{{range .Sessions}}<div class="meta session-line">{{if eq .Note "skipped"}}<span class="badge muted">{{t "today.skipped_badge"}}</span>{{else if eq .Note "auto-skipped"}}<span class="badge muted">{{t "today.skipped_plan_badge"}}</span>{{else if eq .Note "postponed"}}<span class="badge pin">{{t "day.badge_postponed"}}</span>{{else if eq .Note "baseline"}}<span class="badge kind">{{t "day.badge_baseline"}}</span>{{if gt .Confidence 0}} · {{t "session.security" .Confidence}}{{end}}{{else}}{{if gt .Minutes 0}}{{dur .Minutes}}{{end}}{{if gt .Confidence 0}}{{if gt .Minutes 0}} · {{end}}{{t "session.security" .Confidence}}{{end}}{{if .BPM.Valid}}{{if or (gt .Minutes 0) (gt .Confidence 0)}} · {{end}}{{t "session.metronome" .BPM.Int64}}{{end}}{{if .Note}}{{if or (gt .Minutes 0) (gt .Confidence 0) .BPM.Valid}} · {{end}}{{.Note}}{{end}}{{end}}</div>{{end}}
 </article>
 {{else}}{{if not .Skipped}}
-<p class="empty">Nessuna seduta registrata in questa giornata.</p>
+<p class="empty">{{t "day.no_sessions"}}</p>
 {{end}}{{end}}
 </div>
 {{if .Skipped}}
-<div class="section-head"><h2>Saltati</h2><span class="meta">{{len .Skipped}} pezz{{if eq (len .Skipped) 1}}o{{else}}i{{end}} saltati</span></div>
+<div class="section-head"><h2>{{t "day.skipped_title"}}</h2><span class="meta">{{tp "day.skipped_meta" (len .Skipped)}}</span></div>
 <div class="stack">
 {{range .Skipped}}
 <article class="card plan-card skipped-card reveal">
-<span class="badge muted done-corner">{{if .Auto}}saltato dal piano{{else}}saltato{{end}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .P.Prep}}%"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .P.Prep}}%</span></span></span>
+<span class="badge muted done-corner">{{if .Auto}}{{t "today.skipped_plan_badge"}}{{else}}{{t "today.skipped_badge"}}{{end}}<span class="prep-pin" tabindex="0" aria-label="{{t "prep.label" (pct .P.Prep)}}"><span class="prep-dot lv{{.P.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .P.Prep)}}</span></span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diary/piece/{{.P.ID}}">{{.P.Composer}} — {{.P.Work}}</a></strong>
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.P.Kind}}</span>{{range .P.Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{kindLabel .P.Kind}}</span>{{range .P.Auditions}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span></span>{{end}}</div>
 </article>
 {{end}}
 </div>
 {{end}}
-<p><a href="/diary">← torna al diario</a></p>
+<p><a href="/diary">&larr; {{t "day.back"}}</a></p>
 {{end}}

@@ -1,26 +1,26 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Storico</span>
-<h1>Diario</h1>
-<p class="meta">Le sedute registrate, giorno per giorno.</p>
+<span class="overline">{{t "diary.overline"}}</span>
+<h1>{{t "nav.diary"}}</h1>
+<p class="meta">{{t "diary.subtitle"}}</p>
 </div>
 
 {{if .Chips}}
 <div class="chips map-filters">
-<a class="chip{{if .TuttiOn}} on{{end}}" href="/diary">Tutti</a>
-{{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></a>{{end}}
+<a class="chip{{if .TuttiOn}} on{{end}}" href="/diary">{{t "diary.all"}}</a>
+{{range .Chips}}<a class="chip{{if .Selected}} on{{end}}{{if .Archived}} muted{{end}}" href="{{.Href}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span></a>{{end}}
 </div>
 {{end}}
 {{if .PrepMap}}
 <section>
-<div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
-<div class="prepmap desk panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
+<div class="section-head"><h2>{{t "prepmap.title"}}</h2><span class="meta">{{tp "prepmap.meta" (len .PrepMap)}}</span></div>
+<div class="prepmap desk panel reveal" role="img" aria-label="{{t "prepmap.aria_all"}}">
 <div class="ptiles">
 {{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
-<div class="prepmap mob panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi">
+<div class="prepmap mob panel reveal" role="img" aria-label="{{t "prepmap.aria_all"}}">
 <div class="ptiles">
 {{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
@@ -28,11 +28,11 @@
 </div>
 <div class="preplegend reveal">
 <span class="preplegend-scale"><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i></span>
-<span>da preparare → pronto · la dimensione riflette la difficoltà (1–5), tarabile in <a href="/pieces">Pezzi</a></span>
+<span>{{t "prepmap.legend_diary"}}<a href="/pieces">{{t "nav.pieces"}}</a></span>
 </div>
 </section>
 {{else if .Filtered}}
-<p class="empty">Nessun pezzo per i concorsi selezionati.</p>
+<p class="empty">{{t "diary.no_pieces_filter"}}</p>
 {{end}}
 
 <div class="stack">
@@ -43,11 +43,11 @@
 <span class="day-date">{{dateIT .Date}}</span>
 <span class="spacer"></span>
 <span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>
-<span class="badge kind">{{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span>
+<span class="badge kind">{{tp "pieces.count" .Pieces}}</span>
 </div>
 </a>
 {{else}}
-<p class="empty">Nessuna seduta registrata finora.</p>
+<p class="empty">{{t "diary.no_days"}}</p>
 {{end}}
 </div>
 {{end}}

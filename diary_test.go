@@ -52,21 +52,21 @@ func TestPrepTilesForFiltersByConcorso(t *testing.T) {
 		}
 	}
 	a := &App{db: db}
-	all, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, nil)
+	all, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, nil, "en")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(all) != 3 {
 		t.Fatalf("unfiltered: want 3 tiles, got %d", len(all))
 	}
-	roma, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true})
+	roma, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true}, "en")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(roma) != 2 {
 		t.Fatalf("audition 1: want 2 tiles, got %d", len(roma))
 	}
-	both, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true, 2: true})
+	both, err := a.prepTilesFor("2026-10-02", prepBiasDesktop, map[int64]bool{1: true, 2: true}, "en")
 	if err != nil {
 		t.Fatal(err)
 	}

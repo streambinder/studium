@@ -1,5 +1,5 @@
 {{define "layout"}}<!DOCTYPE html>
-<html lang="it">
+<html lang="{{lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,18 +15,18 @@
 <div class="header-inner">
 <a class="brand" href="/"><span class="brand-mark">S</span><span class="brand-name">studium</span></a>
 <nav>
-<a href="/" class="{{if eq .Nav "today"}}active{{end}}">Oggi</a>
-<a href="/pieces" class="{{if eq .Nav "pieces"}}active{{end}}">Pezzi</a>
-<a href="/auditions" class="{{if eq .Nav "auditions"}}active{{end}}">Auditions</a>
-<a href="/diary" class="{{if eq .Nav "diary"}}active{{end}}">Diario</a>
-<a href="/settings" class="{{if eq .Nav "settings"}}active{{end}}">Impostazioni</a>
+<a href="/" class="{{if eq .Nav "today"}}active{{end}}">{{t "nav.today"}}</a>
+<a href="/pieces" class="{{if eq .Nav "pieces"}}active{{end}}">{{t "nav.pieces"}}</a>
+<a href="/auditions" class="{{if eq .Nav "auditions"}}active{{end}}">{{t "nav.auditions"}}</a>
+<a href="/diary" class="{{if eq .Nav "diary"}}active{{end}}">{{t "nav.diary"}}</a>
+<a href="/settings" class="{{if eq .Nav "settings"}}active{{end}}">{{t "nav.settings"}}</a>
 </nav>
 </div>
 </header>
 <main>
 {{template "content" .}}
 </main>
-<footer class="site-footer"><span>studium · diario di studio</span></footer>
+<footer class="site-footer"><span>studium · {{t "app.tagline"}}</span></footer>
 <script>
 (function() {
   var io = new IntersectionObserver(function(entries) {

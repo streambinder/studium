@@ -44,6 +44,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /diary/piece/{id}", a.handlePieceDetail)
 	mux.HandleFunc("GET /settings", a.handleSettings)
 	mux.HandleFunc("POST /settings", a.handleSaveSettings)
+	mux.HandleFunc("POST /settings/language", a.handleSetLanguage)
 	registerLegacyRedirects(mux)
 }
 
@@ -180,14 +181,14 @@ func concorsoNameDate(w http.ResponseWriter, r *http.Request) (name, date string
 	name = strings.TrimSpace(r.FormValue("name"))
 	date = r.FormValue("date")
 	if name == "" || date == "" {
-		http.Error(w, "nome e data sono obbligatori", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.name_date_required"), http.StatusBadRequest)
 		return "", "", false
 	}
 	return name, date, true
 }
 
-// concorsiOr500 lists the active auditions, answering 500 itself on failure.
-func (a *App) concorsiOr500(w http.ResponseWriter) ([]Audition, bool) {
+// auditionsOr500 lists the active auditions, answering 500 itself on failure.
+func (a *App) auditionsOr500(w http.ResponseWriter) ([]Audition, bool) {
 	auditions, err := a.listAuditions(false)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -286,10 +287,10 @@ type readinessRow struct {
 	Pct    int
 }
 
-// concorsoReadiness averages the preparation score of the active
+// auditionReadiness averages the preparation score of the active
 // pieces linked to each upcoming audition.
-func (a *App) concorsoReadiness(today string, pieces []Piece) ([]readinessRow, error) {
-	tiles, err := a.prepTiles(today, prepBiasDesktop)
+func (a *App) auditionReadiness(today string, pieces []Piece, lang string) ([]readinessRow, error) {
+	tiles, err := a.prepTiles(today, prepBiasDesktop, lang)
 	if err != nil {
 		return nil, err
 	}
@@ -466,6 +467,7 @@ type forecastInput struct {
 type planForecaster struct {
 	coeffs Coeffs
 	inputs []forecastInput
+	lang   string
 }
 
 func (a *App) newPlanForecaster(today string) (*planForecaster, error) {
@@ -637,7 +639,7 @@ func (f *planForecaster) entryReason(target *forecastInput, today, entryDay stri
 	for _, in := range f.inputs {
 		for _, c := range in.auditions {
 			if c.Date == prevDay && !own[c.ID] {
-				return "dal giorno dopo la prova di " + c.Name + " i suoi pezzi lasciano la testa della classifica", nil
+				return tr(f.lang, "forecast.reason_after", c.Name), nil
 			}
 		}
 	}
@@ -656,9 +658,9 @@ func (f *planForecaster) entryReason(target *forecastInput, today, entryDay stri
 				nearestDate, nearestName = c.Date, c.Name
 			}
 		}
-		return "l'urgenza di " + nearestName + " cresce man mano che la prova si avvicina", nil
+		return tr(f.lang, "forecast.reason_urgency", nearestName), nil
 	}
-	return "la soglia dei primi 8 si abbassa man mano che le prove più vicine si svolgono", nil
+	return tr(f.lang, "forecast.reason_threshold"), nil
 }
 
 // autoSkipGraceMin is the buffer kept before the plan drops a piece
@@ -741,14 +743,14 @@ func (a *App) autoSkipOverflow(items []planItem, remaining, grace int, today str
 	return items, nil
 }
 
-func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
+func (a *App) handleToday(w http.ResponseWriter, r *http.Request) {
 	today := todayStr()
 	avail, err := a.availabilityFor(today)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data := todayData{Title: "Oggi", Nav: "today", Date: today, HasAvailability: len(avail) > 0}
+	data := todayData{Title: tr(langFor(r), "nav.today"), Nav: "today", Date: today, HasAvailability: len(avail) > 0}
 	for _, v := range avail {
 		if v.Kind == "busy" {
 			data.Busy = append(data.Busy, v)
@@ -987,12 +989,12 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 	data.PlanTotal = len(data.Items) + len(data.ExtraDone)
-	data.Readiness, err = a.concorsoReadiness(today, pieces)
+	data.Readiness, err = a.auditionReadiness(today, pieces, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "today.html", data)
+	a.render(w, r, "today.html", data)
 }
 
 func (a *App) handleAddAvailability(w http.ResponseWriter, r *http.Request) {
@@ -1007,7 +1009,7 @@ func (a *App) handleAddAvailability(w http.ResponseWriter, r *http.Request) {
 	start, ok1 := parseHHMM(r.FormValue("start"))
 	end, ok2 := parseHHMM(r.FormValue("end"))
 	if !ok1 || !ok2 || end <= start {
-		http.Error(w, "orario non valido", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.time_invalid"), http.StatusBadRequest)
 		return
 	}
 	_, err := a.db.Exec(`INSERT INTO availability(date, start_min, end_min, label, kind)
@@ -1045,7 +1047,7 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 	minutes := formInt(r, "minutes", 0)
 	conf := formInt(r, "confidence", 0)
 	if pieceID <= 0 || minutes < 0 || conf < 1 || conf > 5 {
-		http.Error(w, "dati seduta non validi", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.session_invalid"), http.StatusBadRequest)
 		return
 	}
 	var bpmVal any
@@ -1082,7 +1084,7 @@ func (a *App) markSession(w http.ResponseWriter, r *http.Request, note string) {
 	}
 	pieceID := formInt(r, "piece_id", 0)
 	if pieceID <= 0 {
-		http.Error(w, "pezzo non valido", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.piece_invalid"), http.StatusBadRequest)
 		return
 	}
 	_, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
@@ -1106,7 +1108,7 @@ type piecesData struct {
 	Nav            string
 	Pieces         []Piece
 	Auditions      []Audition
-	FilterConcorso int64
+	FilterAudition int64
 	FilterKind     string
 	Search         string
 	ShowArchived   bool
@@ -1127,13 +1129,13 @@ func (a *App) handlePieces(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	auditions, ok := a.concorsiOr500(w)
+	auditions, ok := a.auditionsOr500(w)
 	if !ok {
 		return
 	}
-	a.render(w, "pieces.html", piecesData{
-		Title: "Pezzi", Nav: "pieces", Pieces: pieces, Auditions: auditions,
-		FilterConcorso: auditionID, FilterKind: kind, Search: search, ShowArchived: showArchived,
+	a.render(w, r, "pieces.html", piecesData{
+		Title: tr(langFor(r), "nav.pieces"), Nav: "pieces", Pieces: pieces, Auditions: auditions,
+		FilterAudition: auditionID, FilterKind: kind, Search: search, ShowArchived: showArchived,
 		Query: r.URL.RawQuery,
 	})
 }
@@ -1166,7 +1168,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 	composer := strings.TrimSpace(r.FormValue("composer"))
 	work := strings.TrimSpace(r.FormValue("work"))
 	if composer == "" || work == "" {
-		http.Error(w, "compositore e opera sono obbligatori", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.composer_work_required"), http.StatusBadRequest)
 		return
 	}
 	res, err := a.db.Exec(`INSERT INTO pieces(composer, work, movement, kind, difficulty)
@@ -1204,7 +1206,7 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	auditions, ok := a.concorsiOr500(w)
+	auditions, ok := a.auditionsOr500(w)
 	if !ok {
 		return
 	}
@@ -1214,8 +1216,8 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 		sel[c.ID] = true
 		excerpts[c.ID] = c.Excerpt
 	}
-	a.render(w, "piece_form.html", pieceFormData{
-		Title: "Modifica pezzo", Nav: "pieces", Piece: p, Auditions: auditions, Selected: sel, Excerpt: excerpts,
+	a.render(w, r, "piece_form.html", pieceFormData{
+		Title: tr(langFor(r), "piece.edit_title"), Nav: "pieces", Piece: p, Auditions: auditions, Selected: sel, Excerpt: excerpts,
 	})
 }
 
@@ -1310,7 +1312,7 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 
 // setArchived runs an archive/restore UPDATE for one row and redirects.
 // The query is a static string chosen by the caller; what labels the event
-// in the log. If the form carries a "ritorna" value pointing at /pezzi or
+// in the log. If the form carries a "return" value pointing at /pezzi or
 // at the piece detail page, it is used as the redirect so the user lands
 // back where they were.
 func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirect, what string) {
@@ -1323,7 +1325,7 @@ func (a *App) setArchived(w http.ResponseWriter, r *http.Request, query, redirec
 		http.NotFound(w, r)
 		return
 	}
-	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/pieces") || strings.HasPrefix(back, "/diary/piece/") || strings.HasPrefix(back, "/auditions/") {
+	if back := r.FormValue("return"); strings.HasPrefix(back, "/pieces") || strings.HasPrefix(back, "/diary/piece/") || strings.HasPrefix(back, "/auditions/") {
 		redirect = back
 	}
 	if _, err := a.db.Exec(query, id); err != nil {
@@ -1358,7 +1360,7 @@ type auditionsData struct {
 	Today string
 }
 
-func (a *App) handleAuditions(w http.ResponseWriter, _ *http.Request) {
+func (a *App) handleAuditions(w http.ResponseWriter, r *http.Request) {
 	today := todayStr()
 	cs, err := a.listAuditions(true)
 	if err != nil {
@@ -1383,7 +1385,7 @@ func (a *App) handleAuditions(w http.ResponseWriter, _ *http.Request) {
 			Links:     nl,
 		})
 	}
-	levels, means, err := a.concorsoPrepStats()
+	levels, means, err := a.auditionPrepStats()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1392,7 +1394,7 @@ func (a *App) handleAuditions(w http.ResponseWriter, _ *http.Request) {
 		rows[i].Level = levels[rows[i].ID]
 		rows[i].Prep = means[rows[i].ID]
 	}
-	a.render(w, "auditions.html", auditionsData{Title: "Auditions", Nav: "auditions", Rows: rows, Today: today})
+	a.render(w, r, "auditions.html", auditionsData{Title: tr(langFor(r), "nav.auditions"), Nav: "auditions", Rows: rows, Today: today})
 }
 
 func validWeight(n int) int {
@@ -1453,7 +1455,7 @@ func (a *App) handleUpdateAudition(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("event audition updated id=%d date=%s", id, date)
 	redirect := "/auditions"
-	if back := r.FormValue("ritorna"); strings.HasPrefix(back, "/auditions/") {
+	if back := r.FormValue("return"); strings.HasPrefix(back, "/auditions/") {
 		redirect = back
 	}
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
@@ -1512,7 +1514,7 @@ func formResourceLinks(w http.ResponseWriter, r *http.Request) ([]AuditionLink, 
 			continue
 		}
 		if !validResourceURL(u) {
-			http.Error(w, "link risorsa non valido: serve un URL http(s) completo", http.StatusBadRequest)
+			http.Error(w, tr(langFor(r), "err.link_invalid"), http.StatusBadRequest)
 			return nil, false
 		}
 		label := ""
@@ -1555,7 +1557,7 @@ func (a *App) handleAuditionDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	{
-		levels, means, err := a.concorsoPrepStats()
+		levels, means, err := a.auditionPrepStats()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -1565,17 +1567,17 @@ func (a *App) handleAuditionDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	filter := map[int64]bool{c.ID: true}
 	today := todayStr()
-	prep, err := a.prepTilesFor(today, prepBiasDesktop, filter)
+	prep, err := a.prepTilesFor(today, prepBiasDesktop, filter, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	prepMobile, err := a.prepTilesFor(today, prepBiasMobile, filter)
+	prepMobile, err := a.prepTilesFor(today, prepBiasMobile, filter, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "audition_detail.html", auditionDetailData{
+	a.render(w, r, "audition_detail.html", auditionDetailData{
 		Title: c.Name, Nav: "auditions", Audition: c,
 		Concluded: !c.Archived && c.Date < todayStr(),
 		Links:     links, Pieces: pieces,
@@ -1602,8 +1604,8 @@ func (a *App) handleAuditionEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "audition_form.html", auditionFormData{
-		Title: "Modifica audition", Nav: "auditions", Audition: c, Links: links,
+	a.render(w, r, "audition_form.html", auditionFormData{
+		Title: tr(langFor(r), "audition.edit_title"), Nav: "auditions", Audition: c, Links: links,
 	})
 }
 
@@ -1621,7 +1623,7 @@ func (a *App) handleAddAuditionLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(links) == 0 {
-		http.Error(w, "link risorsa mancante", http.StatusBadRequest)
+		http.Error(w, tr(langFor(r), "err.link_missing"), http.StatusBadRequest)
 		return
 	}
 	for _, l := range links {
@@ -1730,7 +1732,7 @@ func (a *App) handleDiary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	chips := make([]auditionChip, 0, len(auditions))
-	chipLevels, chipMeans, err := a.concorsoPrepStats()
+	chipLevels, chipMeans, err := a.auditionPrepStats()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1751,17 +1753,17 @@ func (a *App) handleDiary(w http.ResponseWriter, r *http.Request) {
 	if len(valid) > 0 {
 		filter = valid
 	}
-	prep, err := a.prepTilesFor(todayStr(), prepBiasDesktop, filter)
+	prep, err := a.prepTilesFor(todayStr(), prepBiasDesktop, filter, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	prepMobile, err := a.prepTilesFor(todayStr(), prepBiasMobile, filter)
+	prepMobile, err := a.prepTilesFor(todayStr(), prepBiasMobile, filter, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "diary.html", map[string]any{"Title": "Diario", "Nav": "diary", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile, "Chips": chips, "TuttiOn": len(valid) == 0, "Filtered": len(valid) > 0})
+	a.render(w, r, "diary.html", map[string]any{"Title": tr(langFor(r), "nav.diary"), "Nav": "diary", "Days": days, "PrepMap": prep, "PrepMapMobile": prepMobile, "Chips": chips, "TuttiOn": len(valid) == 0, "Filtered": len(valid) > 0})
 }
 
 type dayPiece struct {
@@ -1791,7 +1793,7 @@ func (a *App) handleDiaryDay(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop)
+	tiles, err := a.prepTiles(todayStr(), prepBiasDesktop, langFor(r))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1810,7 +1812,7 @@ func (a *App) handleDiaryDay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer closeRowsLogged(rows)
-	data := dayData{Title: "Diario", Nav: "diary", Date: date}
+	data := dayData{Title: tr(langFor(r), "nav.diary"), Nav: "diary", Date: date}
 	byKey := map[int64]int{}
 	counted := map[int64]bool{}
 	skipAuto := map[int64]bool{}
@@ -1929,7 +1931,7 @@ func (a *App) handleDiaryDay(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	a.render(w, "day.html", data)
+	a.render(w, r, "day.html", data)
 }
 
 type pieceDetailData struct {
@@ -2091,6 +2093,9 @@ func (a *App) handlePieceDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		if !score.InTop {
 			fc, err := a.newPlanForecaster(today)
+			if err == nil {
+				fc.lang = langFor(r)
+			}
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -2103,7 +2108,7 @@ func (a *App) handlePieceDetail(w http.ResponseWriter, r *http.Request) {
 			score.ForecastDate, score.ForecastScore, score.ForecastWhy = fDate, fScore, fWhy
 		}
 	}
-	a.render(w, "piece_detail.html", pieceDetailData{
+	a.render(w, r, "piece_detail.html", pieceDetailData{
 		Title: p.Composer + " — " + p.Work, Nav: "pieces", Piece: p, Sessions: sessions, Spark: buildSparkline(cps), Score: score,
 	})
 }
@@ -2111,24 +2116,27 @@ func (a *App) handlePieceDetail(w http.ResponseWriter, r *http.Request) {
 // ---------- impostazioni ----------
 
 type settingsData struct {
-	Title     string
-	Nav       string
-	Coeffs    Coeffs
-	Auditions []Audition
+	Title      string
+	Nav        string
+	Coeffs     Coeffs
+	Auditions  []Audition
+	LangChoice string
+	LangName   string
 }
 
-func (a *App) handleSettings(w http.ResponseWriter, _ *http.Request) {
+func (a *App) handleSettings(w http.ResponseWriter, r *http.Request) {
 	coeffs, err := a.getCoeffs()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	auditions, ok := a.concorsiOr500(w)
+	auditions, ok := a.auditionsOr500(w)
 	if !ok {
 		return
 	}
-	a.render(w, "settings.html", settingsData{
-		Title: "Impostazioni", Nav: "settings", Coeffs: coeffs, Auditions: auditions,
+	a.render(w, r, "settings.html", settingsData{
+		Title: tr(langFor(r), "nav.settings"), Nav: "settings", Coeffs: coeffs, Auditions: auditions,
+		LangChoice: langChoice(r), LangName: langNames[langFor(r)],
 	})
 }
 
@@ -2149,7 +2157,7 @@ func (a *App) handleSaveSettings(w http.ResponseWriter, r *http.Request) {
 	} {
 		f, err := strconv.ParseFloat(kv.val, 64)
 		if err != nil || f <= 0 {
-			http.Error(w, "coefficiente non valido: "+kv.key, http.StatusBadRequest)
+			http.Error(w, tr(langFor(r), "err.coefficient", kv.key), http.StatusBadRequest)
 			return
 		}
 		if err := a.setCoeff(kv.key, f); err != nil {

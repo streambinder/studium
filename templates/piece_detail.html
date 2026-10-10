@@ -1,33 +1,33 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Scheda pezzo</span>
-<h1><span class="prep-pin pin-title" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">archiviato</span>{{end}}</h1>
+<span class="overline">{{t "piece.overline"}}</span>
+<h1><span class="prep-pin pin-title" tabindex="0" aria-label="{{t "prep.label" (pct .Piece.Prep)}}"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Piece.Prep)}}</span></span>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">{{t "pieces.archived_badge"}}</span>{{end}}</h1>
 {{if .Piece.Movement}}<p class="piece-subtitle">{{.Piece.Movement}}</p>{{end}}
 <div class="concorso-rows">
-{{range .Piece.Auditions}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{if .Excerpt}}<span class="meta">{{.Excerpt}}</span>{{end}}</div>
-{{else}}<p class="meta">Nessun concorso collegato.</p>{{end}}
+{{range .Piece.Auditions}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span></span>{{if .Excerpt}}<span class="meta">{{.Excerpt}}</span>{{end}}</div>
+{{else}}<p class="meta">{{t "piece.none_linked"}}</p>{{end}}
 </div>
 <div class="row btns">
-<a class="btn" href="/pieces/{{.Piece.ID}}/edit">Modifica</a>
+<a class="btn" href="/pieces/{{.Piece.ID}}/edit">{{t "common.edit"}}</a>
 {{if .Piece.Archived}}
-<form method="post" action="/pieces/{{.Piece.ID}}/restore" class="inline"><input type="hidden" name="ritorna" value="/diary/piece/{{.Piece.ID}}"><button class="secondary" type="submit">Ripristina</button></form>
+<form method="post" action="/pieces/{{.Piece.ID}}/restore" class="inline"><input type="hidden" name="return" value="/diary/piece/{{.Piece.ID}}"><button class="secondary" type="submit">{{t "common.restore"}}</button></form>
 {{else}}
-<form method="post" action="/pieces/{{.Piece.ID}}/archive" class="inline"><input type="hidden" name="ritorna" value="/diary/piece/{{.Piece.ID}}"><button class="secondary" type="submit">Archivia</button></form>
+<form method="post" action="/pieces/{{.Piece.ID}}/archive" class="inline"><input type="hidden" name="return" value="/diary/piece/{{.Piece.ID}}"><button class="secondary" type="submit">{{t "common.archive"}}</button></form>
 {{end}}
 </div>
 </div>
 
 {{if .Spark.Points}}
 <section class="panel reveal">
-<div class="section-head"><h2>Sicurezza nel tempo</h2></div>
-<svg viewBox="0 0 740 118" class="spark" role="img" aria-label="andamento sicurezza">
+<div class="section-head"><h2>{{t "piece.security_history"}}</h2></div>
+<svg viewBox="0 0 740 118" class="spark" role="img" aria-label="{{t "piece.spark_aria"}}">
 <defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
 <stop offset="0" stop-color="#c99a5b"/><stop offset="1" stop-color="#8a5a2e"/>
 </linearGradient></defs>
 {{range .Spark.Grid}}<line x1="26" x2="712" y1="{{.Y}}" y2="{{.Y}}" class="spark-grid"/><text x="18" y="{{.Y}}" dy="3.5" text-anchor="end" class="spark-ylabel">{{.Label}}</text>{{end}}
 <line x1="26" x2="26" y1="10" y2="86" class="spark-axis"/>
 <polyline points="{{range $i, $p := .Spark.Points}}{{if $i}} {{end}}{{$p.X}},{{$p.Y}}{{end}}" fill="none" stroke-width="2"/>
-{{range .Spark.Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="4"><title>{{dateIT .Date}} — sicurezza {{.Conf}}/5</title></circle>{{end}}
+{{range .Spark.Points}}<circle cx="{{.X}}" cy="{{.Y}}" r="4"><title>{{t "piece.spark_point" (dateIT .Date) .Conf}}</title></circle>{{end}}
 <text x="{{.Spark.FirstX}}" y="104" text-anchor="middle" class="spark-xlabel">{{dateDMY .Spark.First}}</text>
 {{if not .Spark.Single}}<text x="{{.Spark.LastX}}" y="104" text-anchor="middle" class="spark-xlabel">{{dateDMY .Spark.Last}}</text>{{end}}
 </svg>
@@ -35,48 +35,48 @@
 {{end}}
 
 <section class="panel reveal">
-<div class="section-head"><h2>Punteggio di oggi</h2>{{if .Score.HasUpcoming}}<span class="meta">{{f1 .Score.Score}}</span>{{end}}</div>
+<div class="section-head"><h2>{{t "piece.today_score"}}</h2>{{if .Score.HasUpcoming}}<span class="meta">{{f1 .Score.Score}}</span>{{end}}</div>
 {{if not .Score.HasUpcoming}}
-<p class="empty-note">Nessun concorso futuro collegato: questo pezzo non entra nel piano giornaliero.</p>
+<p class="empty-note">{{t "piece.no_upcoming"}}</p>
 {{else}}
 <ul>
-<li><strong>base {{f1 .Score.Base}}</strong> — in {{len .Score.Upcoming}} concors{{if gt (len .Score.Upcoming) 1}}i{{else}}o{{end}}:
-{{range $i, $c := .Score.Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (priorità {{$c.Weight}}){{end}}</li>
-<li><strong>urgenza {{f1 .Score.Urgency}}</strong> — prova più vicina tra {{.Score.Days}} giorni ({{(index .Score.Upcoming 0).Name}})</li>
-<li><strong>bisogno {{f1 .Score.Need}}</strong> — sicurezza {{confLabel .Score.Conf .Score.ConfRated}}</li>
-<li><strong>ripresa {{f1 .Score.Recency}}</strong> — {{sinceLabel .Score.Since .Score.SinceNever}}</li>
-{{if gt .Score.Diff 1.0}}<li><strong>difficoltà ×{{f1 .Score.Diff}}</strong> — difficoltà {{.Piece.Difficulty}}/5: i pezzi difficili partono prima e contano di più</li>{{end}}
-{{if lt .Score.Rest 1.0}}<li><strong>riposo ×{{f1 .Score.Rest}}</strong> — studiato ieri: oggi in secondo piano, spazio ad altri pezzi</li>{{end}}
+<li><strong>{{t "score.base_name"}} {{f1 .Score.Base}}</strong> — {{tp "score.auditions_count" (len .Score.Upcoming)}}
+{{range $i, $c := .Score.Upcoming}}{{if $i}}, {{end}}{{$c.Name}} ({{t "score.priority" $c.Weight}}){{end}}</li>
+<li><strong>{{t "score.urgency_name"}} {{f1 .Score.Urgency}}</strong> — {{t "score.urgency_why" .Score.Days ((index .Score.Upcoming 0).Name)}}</li>
+<li><strong>{{t "score.need_name"}} {{f1 .Score.Need}}</strong> — {{t "score.need_why" (confLabel .Score.Conf .Score.ConfRated)}}</li>
+<li><strong>{{t "score.recency_name"}} {{f1 .Score.Recency}}</strong> — {{sinceLabel .Score.Since .Score.SinceNever}}</li>
+{{if gt .Score.Diff 1.0}}<li><strong>{{t "score.difficulty_name"}} ×{{f1 .Score.Diff}}</strong> — {{t "score.difficulty_why" .Piece.Difficulty}}</li>{{end}}
+{{if lt .Score.Rest 1.0}}<li><strong>{{t "score.rest_name"}} ×{{f1 .Score.Rest}}</strong> — {{t "score.rest_why"}}</li>{{end}}
 </ul>
-<p class="formula">punteggio = {{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if gt .Score.Diff 1.0}} × {{f1 .Score.Diff}}{{end}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
-{{if .Score.Skipped}}<p class="empty-note">Oggi è stato saltato: resta fuori dal piano di oggi.</p>
-{{else if .Score.Rank}}<p class="empty-note">Posizione {{.Score.Rank}} di {{.Score.Candidates}} per il piano di oggi: {{if .Score.InTop}}tra i primi 8, quelli proposti{{else}}fuori dai primi 8 proposti{{end}}.</p>{{end}}
-{{if .Score.InTop}}<p class="empty-note">È già tra i pezzi proposti oggi.</p>
-{{else if .Score.ForecastDate}}<p class="empty-note"><strong>Proiezione:</strong> se non cambia nulla (nessuna nuova seduta, stesse confidenze), entra tra i primi 8 <strong>{{dateIT .Score.ForecastDate}}</strong> con punteggio {{f1 .Score.ForecastScore}}: {{.Score.ForecastWhy}}.</p>
-{{else}}<p class="empty-note"><strong>Proiezione:</strong> se non cambia nulla, non entra tra i primi 8 prima della sua prova più vicina ({{(index .Score.Upcoming 0).Name}}, {{dateIT (index .Score.Upcoming 0).Date}}).</p>{{end}}
+<p class="formula">{{t "score.formula"}}{{f1 .Score.Base}} × {{f1 .Score.Urgency}} × {{f1 .Score.Need}} × {{f1 .Score.Recency}}{{if gt .Score.Diff 1.0}} × {{f1 .Score.Diff}}{{end}}{{if lt .Score.Rest 1.0}} × {{f1 .Score.Rest}}{{end}} = <strong>{{f1 .Score.Score}}</strong></p>
+{{if .Score.Skipped}}<p class="empty-note">{{t "piece.skipped_today"}}</p>
+{{else if .Score.Rank}}<p class="empty-note">{{t "piece.rank" .Score.Rank .Score.Candidates}} {{if .Score.InTop}}{{t "piece.rank_in"}}{{else}}{{t "piece.rank_out"}}{{end}}.</p>{{end}}
+{{if .Score.InTop}}<p class="empty-note">{{t "piece.already_in"}}</p>
+{{else if .Score.ForecastDate}}<p class="empty-note"><strong>{{t "piece.forecast_label"}}:</strong> {{t "piece.forecast_in_a"}}<strong>{{dateIT .Score.ForecastDate}}</strong>{{t "piece.forecast_in_b" (f1 .Score.ForecastScore) .Score.ForecastWhy}}</p>
+{{else}}<p class="empty-note"><strong>{{t "piece.forecast_label"}}:</strong> {{t "piece.forecast_never_a"}}{{(index .Score.Upcoming 0).Name}}, {{dateIT (index .Score.Upcoming 0).Date}}{{t "piece.forecast_never_b"}}</p>{{end}}
 {{end}}
 </section>
 
 <section>
-<div class="section-head"><h2>Sedute</h2><span class="meta">{{len .Sessions}}</span></div>
+<div class="section-head"><h2>{{t "piece.sessions"}}</h2><span class="meta">{{len .Sessions}}</span></div>
 <div class="stack">
 {{range .Sessions}}
 <article class="card reveal">
 <div class="card-head"><strong>{{dateIT .Date}}</strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>{{end}}
-{{if gt .Confidence 0}}<span class="badge kind">sicurezza {{.Confidence}}/5</span>{{end}}
-{{if .BPM.Valid}}<span class="badge kind">metronomo {{.BPM.Int64}}</span>{{end}}
-{{if eq .Note "postponed"}}<span class="badge pin">rimandato</span>{{end}}
-{{if eq .Note "skipped"}}<span class="badge muted">saltato</span>{{end}}
-{{if eq .Note "auto-skipped"}}<span class="badge muted">saltato dal piano</span>{{end}}
-{{if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{end}}
+{{if gt .Confidence 0}}<span class="badge kind">{{t "session.security" .Confidence}}</span>{{end}}
+{{if .BPM.Valid}}<span class="badge kind">{{t "session.metronome" .BPM.Int64}}</span>{{end}}
+{{if eq .Note "postponed"}}<span class="badge pin">{{t "day.badge_postponed"}}</span>{{end}}
+{{if eq .Note "skipped"}}<span class="badge muted">{{t "today.skipped_badge"}}</span>{{end}}
+{{if eq .Note "auto-skipped"}}<span class="badge muted">{{t "today.skipped_plan_badge"}}</span>{{end}}
+{{if eq .Note "baseline"}}<span class="badge kind">{{t "day.badge_baseline"}}</span>{{end}}
 </div>
 {{if and (ne .Note "postponed") (ne .Note "skipped") (ne .Note "auto-skipped") (ne .Note "baseline") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
 </article>
 {{else}}
-<p class="empty">Nessuna seduta per questo pezzo.</p>
+<p class="empty">{{t "piece.no_sessions"}}</p>
 {{end}}
 </div>
 </section>
-<p><a href="/pieces">← torna ai pezzi</a></p>
+<p><a href="/pieces">&larr; {{t "piece.back"}}</a></p>
 {{end}}

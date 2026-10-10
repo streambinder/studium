@@ -218,7 +218,7 @@ func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rows, err := a.concorsoReadiness("2026-10-02", pieces)
+	rows, err := a.auditionReadiness("2026-10-02", pieces, "en")
 	if err != nil {
 		t.Fatal(err)
 	}

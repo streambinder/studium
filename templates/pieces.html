@@ -1,65 +1,65 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Repertorio</span>
-<h1>Pezzi</h1>
-<p class="meta">{{len .Pieces}} pezzi · i pesi dei concorsi guidano il piano giornaliero</p>
+<span class="overline">{{t "pieces.overline"}}</span>
+<h1>{{t "pieces.title"}}</h1>
+<p class="meta">{{tp "pieces.subtitle" (len .Pieces)}}</p>
 </div>
 
 <section class="panel reveal">
-<div class="section-head"><h2>Aggiungi un pezzo</h2></div>
+<div class="section-head"><h2>{{t "pieces.add_title"}}</h2></div>
 <form method="post" action="/pieces">
 <div class="row">
-<label>Compositore <input type="text" name="composer" required></label>
-<label>Opera <input type="text" name="work" required></label>
+<label>{{t "field.composer"}} <input type="text" name="composer" required></label>
+<label>{{t "field.work"}} <input type="text" name="work" required></label>
 </div>
 <div class="row">
-<label>Movimento <input type="text" name="movement" placeholder="es. II mov. Andante"></label>
-<label>Tipo
+<label>{{t "field.movement"}} <input type="text" name="movement" placeholder="{{t "field.movement_ph"}}"></label>
+<label>{{t "field.kind"}}
 <select name="kind">
-<option value="excerpt">passo d'orchestra</option>
-<option value="solo">solistico</option>
+<option value="excerpt">{{t "kind.excerpt_long"}}</option>
+<option value="solo">{{t "kind.solo_long"}}</option>
 </select></label>
 </div>
-<label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
-<fieldset><legend>Auditions</legend>
-{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
+<label>{{t "field.difficulty"}} <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
+<fieldset><legend>{{t "nav.auditions"}}</legend>
+{{range .Auditions}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="audition" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" placeholder="{{t "field.excerpt_ph"}}"></div>{{end}}
 </fieldset>
-<button type="submit">Aggiungi</button>
+<button type="submit">{{t "common.add"}}</button>
 </form>
 </section>
 
 <form method="get" action="/pieces" class="filters panel reveal">
-<label class="search">Cerca <input type="search" name="q" value="{{.Search}}" placeholder="compositore, opera, movimento, concorso…" enterkeyhint="search" onchange="this.form.submit()"></label>
-<label>Audition
+<label class="search">{{t "pieces.search"}} <input type="search" name="q" value="{{.Search}}" placeholder="{{t "pieces.search_ph"}}" enterkeyhint="search" onchange="this.form.submit()"></label>
+<label>{{t "pieces.filter_audition"}}
 <select name="audition" onchange="this.form.submit()">
-<option value="0">tutti</option>
-{{range .Auditions}}<option value="{{.ID}}" {{if eq $.FilterConcorso .ID}}selected{{end}}>{{.Name}}</option>{{end}}
+<option value="0">{{t "filter.all"}}</option>
+{{range .Auditions}}<option value="{{.ID}}" {{if eq $.FilterAudition .ID}}selected{{end}}>{{.Name}}</option>{{end}}
 </select></label>
-<label>Tipo
+<label>{{t "field.kind"}}
 <select name="kind" onchange="this.form.submit()">
-<option value="">tutti</option>
-<option value="excerpt" {{if eq $.FilterKind "excerpt"}}selected{{end}}>passi</option>
-<option value="solo" {{if eq $.FilterKind "solo"}}selected{{end}}>solistici</option>
+<option value="">{{t "filter.all"}}</option>
+<option value="excerpt" {{if eq $.FilterKind "excerpt"}}selected{{end}}>{{t "kind.excerpts_plural"}}</option>
+<option value="solo" {{if eq $.FilterKind "solo"}}selected{{end}}>{{t "kind.solos_plural"}}</option>
 </select></label>
-<label class="check"><input type="checkbox" name="archiviati" value="1" {{if .ShowArchived}}checked{{end}} onchange="this.form.submit()"> mostra archiviati</label>
+<label class="check"><input type="checkbox" name="archiviati" value="1" {{if .ShowArchived}}checked{{end}} onchange="this.form.submit()"> {{t "pieces.show_archived"}}</label>
 </form>
 
 <div class="stack">
 {{range .Pieces}}
 <article class="card reveal {{if .Archived}}archived{{end}}">
-<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span>
 <div class="card-head">
 <strong><a class="card-link" href="/diary/piece/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong>
-{{if .Archived}}<span class="badge muted">archiviato</span>
-{{else if not .HasActive}}<span class="badge muted">nessun concorso attivo</span>{{end}}
+{{if .Archived}}<span class="badge muted">{{t "pieces.archived_badge"}}</span>
+{{else if not .HasActive}}<span class="badge muted">{{t "pieces.no_active"}}</span>{{end}}
 </div>
-<div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{kindLabel .Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
 {{if .Auditions}}<div class="chips">
-{{range $c := .Auditions}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct $c.Prep}}%"><span class="prep-dot lv{{$c.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct $c.Prep}}%</span></span></span>{{end}}
+{{range $c := .Auditions}}<span class="chip{{if $c.Archived}} muted{{end}}">{{$c.Name}}<span class="prep-pin" tabindex="0" aria-label="{{t "prep.label" (pct $c.Prep)}}"><span class="prep-dot lv{{$c.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct $c.Prep)}}</span></span></span>{{end}}
 </div>{{end}}
 </article>
 {{else}}
-<p class="empty">Nessun pezzo con questi filtri.</p>
+<p class="empty">{{t "pieces.empty_filtered"}}</p>
 {{end}}
 </div>
 

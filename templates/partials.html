@@ -1,16 +1,16 @@
 {{define "readiness"}}
 {{if .Readiness}}
 <section class="panel reveal">
-<div class="section-head"><h2>Prontezza per concorso</h2></div>
+<div class="section-head"><h2>{{t "readiness.title"}}</h2></div>
 {{range .Readiness}}
 <a class="ready-link" href="/auditions/{{.ID}}">
 <div class="ready-row">
-<div class="ready-head"><span class="ready-name">{{.Name}}</span><span class="meta">{{dateIT .Date}} · tra {{.Days}} giorn{{if eq .Days 1}}o{{else}}i{{end}} · {{.Pieces}} pezz{{if eq .Pieces 1}}o{{else}}i{{end}}</span><span class="ready-pct">{{.Pct}}%</span></div>
+<div class="ready-head"><span class="ready-name">{{.Name}}</span><span class="meta">{{dateIT .Date}} · {{tp "days.in" .Days}} · {{tp "pieces.count" .Pieces}}</span><span class="ready-pct">{{.Pct}}%</span></div>
 <div class="budget-bar"><span style="--w: {{.Pct}}%"></span></div>
 </div>
 </a>
 {{end}}
-<p class="meta">Media dello stato di preparazione dei pezzi collegati a ciascun concorso.</p>
+<p class="meta">{{t "readiness.note"}}</p>
 </section>
 {{end}}
 {{end}}
@@ -19,16 +19,16 @@
 <form method="post" action="/availability" class="avail-form">
 <input type="hidden" name="date" value="{{.Date}}">
 <div class="row">
-<label>Dalle <input type="time" name="start" value="09:00" required></label>
-<label>Alle <input type="time" name="end" value="12:00" required></label>
+<label>{{t "avail.from"}} <input type="time" name="start" value="09:00" required></label>
+<label>{{t "avail.to"}} <input type="time" name="end" value="12:00" required></label>
 </div>
 <div class="row">
-<label>Etichetta <input type="text" name="label" placeholder="es. mattina"></label>
+<label>{{t "avail.label"}} <input type="text" name="label" placeholder="{{t "avail.label_ph"}}"></label>
 </div>
 <div class="row btns">
-<button type="submit">Aggiungi fascia</button>
-<button type="button" class="secondary preset3h">3 ore (9–12)</button>
-<button type="button" class="secondary presetDay">tutto il giorno (9–18)</button>
+<button type="submit">{{t "avail.add"}}</button>
+<button type="button" class="secondary preset3h">{{t "avail.preset3h"}}</button>
+<button type="button" class="secondary presetDay">{{t "avail.preset_day"}}</button>
 </div>
 </form>
 <script>

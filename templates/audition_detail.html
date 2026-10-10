@@ -1,21 +1,21 @@
 {{define "content"}}
 <div class="page-head">
-<span class="overline">Audition</span>
-<h1><span class="prep-pin pin-title" tabindex="0" aria-label="Preparazione {{pct .Audition.Prep}}%"><span class="prep-dot lv{{.Audition.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Audition.Prep}}%</span></span>{{.Audition.Name}}{{if .Audition.Archived}} <span class="badge muted">archiviato</span>{{else if .Concluded}} <span class="badge done">concluso</span>{{end}}</h1>
-<p class="meta">Prova: {{dateIT .Audition.Date}} · Priorità {{.Audition.Weight}}/5 · {{len .Pieces}} pezzi collegati · {{len .Links}} risors{{if eq (len .Links) 1}}a{{else}}e{{end}}</p>
+<span class="overline">{{t "nav.auditions"}}</span>
+<h1><span class="prep-pin pin-title" tabindex="0" aria-label="{{t "prep.label" (pct .Audition.Prep)}}"><span class="prep-dot lv{{.Audition.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Audition.Prep)}}</span></span>{{.Audition.Name}}{{if .Audition.Archived}} <span class="badge muted">{{t "pieces.archived_badge"}}</span>{{else if .Concluded}} <span class="badge done">{{t "auditions.concluded_badge"}}</span>{{end}}</h1>
+<p class="meta">{{t "audition.date_label" (dateIT .Audition.Date)}} · {{t "audition.priority_label" .Audition.Weight}} · {{tp "pieces.linked" (len .Pieces)}} · {{tp "resources.count" (len .Links)}}</p>
 <div class="row btns">
-{{if not .Audition.Archived}}<a class="btn" href="/auditions/{{.Audition.ID}}/edit">Modifica</a>{{end}}
+{{if not .Audition.Archived}}<a class="btn" href="/auditions/{{.Audition.ID}}/edit">{{t "common.edit"}}</a>{{end}}
 {{if .Audition.Archived}}
-<form method="post" action="/auditions/{{.Audition.ID}}/restore" class="inline"><input type="hidden" name="ritorna" value="/auditions/{{.Audition.ID}}"><button class="secondary" type="submit">Ripristina</button></form>
+<form method="post" action="/auditions/{{.Audition.ID}}/restore" class="inline"><input type="hidden" name="return" value="/auditions/{{.Audition.ID}}"><button class="secondary" type="submit">{{t "common.restore"}}</button></form>
 {{else}}
-<form method="post" action="/auditions/{{.Audition.ID}}/archive" class="inline"><input type="hidden" name="ritorna" value="/auditions/{{.Audition.ID}}"><button class="secondary" type="submit">Archivia</button></form>
+<form method="post" action="/auditions/{{.Audition.ID}}/archive" class="inline"><input type="hidden" name="return" value="/auditions/{{.Audition.ID}}"><button class="secondary" type="submit">{{t "common.archive"}}</button></form>
 {{end}}
 </div>
 </div>
 
 {{if .Links}}
 <section>
-<div class="section-head"><h2>Risorse</h2></div>
+<div class="section-head"><h2>{{t "detail.resources"}}</h2></div>
 <div class="stack">
 {{range .Links}}
 <article class="card reveal res-card">
@@ -29,14 +29,14 @@
 
 {{if .PrepMap}}
 <section>
-<div class="section-head"><h2>Mappa di preparazione</h2><span class="meta">{{len .PrepMap}} pezzi · dimensione = difficoltà · colore = stato</span></div>
-<div class="prepmap desk panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi di questo concorso">
+<div class="section-head"><h2>{{t "prepmap.title"}}</h2><span class="meta">{{tp "prepmap.meta" (len .PrepMap)}}</span></div>
+<div class="prepmap desk panel reveal" role="img" aria-label="{{t "prepmap.aria_audition"}}">
 <div class="ptiles">
 {{range .PrepMap}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
 </div>
 </div>
-<div class="prepmap mob panel reveal" role="img" aria-label="Mappa di preparazione dei pezzi di questo concorso">
+<div class="prepmap mob panel reveal" role="img" aria-label="{{t "prepmap.aria_audition"}}">
 <div class="ptiles">
 {{range .PrepMapMobile}}<a class="ptile lv{{.Level}}{{.Corner}}" style="left:calc({{f1 .X}}% + 3px);top:calc({{f1 .Y}}% + 3px);width:calc({{f1 .W}}% - 6px);height:calc({{f1 .H}}% - 6px)" href="/diary/piece/{{.PieceID}}" title="{{.Title}}"><span>{{.Label}}</span></a>
 {{end}}
@@ -44,23 +44,23 @@
 </div>
 <div class="preplegend reveal">
 <span class="preplegend-scale"><i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i></span>
-<span>da preparare → pronto · la dimensione riflette la difficoltà (1–5)</span>
+<span>{{t "prepmap.legend"}}</span>
 </div>
 </section>
 {{end}}
 
 <section>
-<div class="section-head"><h2>Pezzi collegati</h2><span class="meta">{{len .Pieces}}</span></div>
+<div class="section-head"><h2>{{t "detail.linked_title"}}</h2><span class="meta">{{len .Pieces}}</span></div>
 <div class="stack">
 {{range .Pieces}}
 <article class="card reveal">
-<span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
+<span class="prep-pin pin-corner" tabindex="0" aria-label="{{t "prep.label" (pct .Prep)}}"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">{{t "prep.label" (pct .Prep)}}</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diary/piece/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
-<div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
+<div class="meta movement-row"><span class="badge kind">{{kindLabel .Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
 {{$e := ""}}{{range .Auditions}}{{if eq .ID $.Audition.ID}}{{$e = .Excerpt}}{{end}}{{end}}{{if $e}}<div class="meta">{{$e}}</div>{{end}}
 </article>
-{{else}}<p class="empty">Nessun pezzo collegato: collegali dalla pagina Pezzi.</p>{{end}}
+{{else}}<p class="empty">{{t "detail.no_pieces"}}</p>{{end}}
 </div>
 </section>
-<p><a href="/auditions">← torna ai concorsi</a></p>
+<p><a href="/auditions">&larr; {{t "detail.back"}}</a></p>
 {{end}}
