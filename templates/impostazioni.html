@@ -12,7 +12,7 @@
 <ul>
 <li><strong>base</strong> = somma dei pesi dei concorsi <em>futuri</em> in cui compare il pezzo. I concorsi con data passata o archiviati non contano; un pezzo senza concorsi futuri esce dal piano.</li>
 <li><strong>urgenza</strong> = 1 + {{f1 .Coeffs.UrgencyK}} × max(0, 1 − giorni_alla_prova / {{f1 .Coeffs.UrgencyHorizon}})</li>
-<li><strong>bisogno</strong> = 1 + (5 − confidenza) / 5 — confidenza 1–5 dall'ultimo check-in (2,5 se mai valutata)</li>
+<li><strong>bisogno</strong> = 1 + (5 − sicurezza) / 5 — sicurezza 1–5 dall'ultimo check-in (2,5 se mai valutata)</li>
 <li><strong>ripresa</strong> = 1 + min(giorni_dall_ultima_seduta / 7, {{f1 .Coeffs.RecencyCap}})</li>
 </ul>
 <p class="meta">I primi 8 pezzi per punteggio si dividono il budget del giorno in proporzione al punteggio (minimo 5 minuti, arrotondati ai 5).</p>

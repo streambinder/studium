@@ -267,7 +267,7 @@ func (a *App) prepTilesFor(todayStr string, bias float64, selected map[int64]boo
 		var b strings.Builder
 		fmt.Fprintf(&b, "%s\nDifficoltà %d/5 · %d sessioni · %s", label, p.Difficulty, len(sessions), dur(minutes))
 		if rated {
-			fmt.Fprintf(&b, " · confidenza %.1f/5", avgConf)
+			fmt.Fprintf(&b, " · sicurezza %.1f/5", avgConf)
 		}
 		tiles = append(tiles, prepTile{
 			PieceID:    p.ID,

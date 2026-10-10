@@ -54,7 +54,7 @@
 <label>Minuti <input type="number" name="minutes" value="10" min="0" max="600"></label>
 </div>
 <div class="row">
-<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>3/5</output></label>
+<label>Sicurezza <input type="range" name="confidence" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>3/5</output></label>
 <label>Metronomo (BPM) <input type="number" name="tempo" min="1" max="400" placeholder="opzionale"></label>
 </div>
 <div class="row btns">
@@ -73,7 +73,7 @@
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
 {{if .Concorsi}}<div class="chips">{{range .Concorsi}}<span class="chip">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{end}}</div>{{end}}
-<div class="diff-row"><label>Confidenza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Da dichiarare</output></label><button type="button" class="base-save" data-id="{{.ID}}" disabled>Salva</button><span class="diff-state" aria-live="polite"></span></div>
+<div class="diff-row"><label>Sicurezza <input type="range" class="base-slider" data-id="{{.ID}}" min="0" max="5" step="1" value="0"> <output>Da dichiarare</output></label><button type="button" class="base-save" data-id="{{.ID}}" disabled>Salva</button><span class="diff-state" aria-live="polite"></span></div>
 </article>
 {{end}}
 </section>
@@ -140,7 +140,7 @@
 <li><strong>base {{f1 .Base}}</strong> — in {{len .Upcoming}} concors{{if gt (len .Upcoming) 1}}i{{else}}o{{end}}:
 {{range $i, $c := .Upcoming}}{{if $i}}, {{end}}{{$c.Name}} (priorità {{$c.Weight}}){{end}}</li>
 <li><strong>urgenza {{f1 .Urgency}}</strong> — prova più vicina tra {{.Days}} giorni ({{(index .Upcoming 0).Name}})</li>
-<li><strong>bisogno {{f1 .Need}}</strong> — confidenza {{confLabel .Conf .ConfRated}}</li>
+<li><strong>bisogno {{f1 .Need}}</strong> — sicurezza {{confLabel .Conf .ConfRated}}</li>
 <li><strong>ripresa {{f1 .Recency}}</strong> — {{sinceLabel .Since .SinceNever}}</li>
 {{if gt .Diff 1.0}}<li><strong>difficoltà ×{{f1 .Diff}}</strong> — difficoltà {{.Piece.Difficulty}}/5: i pezzi difficili partono prima e contano di più</li>{{end}}
 {{if lt .Rest 1.0}}<li><strong>riposo ×{{f1 .Rest}}</strong> — studiato ieri: oggi in secondo piano, spazio ad altri pezzi</li>{{end}}
@@ -157,7 +157,7 @@
 </div>
 <div class="row">
 <label>Minuti <input type="number" name="minutes" value="{{.Minutes}}" min="0" max="600"></label>
-<label>Confidenza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>{{printf "%.0f" .Conf}}/5</output></label>
+<label>Sicurezza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>{{printf "%.0f" .Conf}}/5</output></label>
 </div>
 <label>Metronomo (BPM) <input type="number" name="tempo" min="1" max="400" placeholder="opzionale"></label>
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
