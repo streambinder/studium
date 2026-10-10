@@ -16,15 +16,15 @@ type Concorso struct {
 	Date     string // YYYY-MM-DD
 	Weight   int
 	Archived bool
-	Estratto string  // per-link excerpt, set only when read through piece_concorso
+	Excerpt  string  // per-link excerpt, set only when read through piece_audition
 	Level    int     // mean preparation level 0..4 of its pieces, stamped on demand
 	Prep     float64 // mean preparation score 0..1 of its pieces, stamped on demand
 }
 
 // Piece kinds.
 const (
-	kindPasso = "passo"
-	kindSolo  = "solo"
+	kindExcerpt = "excerpt"
+	kindSolo    = "solo"
 )
 
 type Piece struct {
@@ -32,7 +32,7 @@ type Piece struct {
 	Composer   string
 	Work       string
 	Movement   string
-	Kind       string // 'passo' | 'solo'
+	Kind       string // 'excerpt' | 'solo'
 	Difficulty int    // 1..5, user-calibrated; drives the prep-map tile size
 	Archived   bool
 	Concorsi   []Concorso
@@ -48,7 +48,7 @@ type Session struct {
 	Minutes    int
 	Confidence int
 	Note       string
-	Tempo      sql.NullInt64 // optional metronome mark (BPM); NULL when unrecorded
+	BPM        sql.NullInt64 // optional metronome mark; NULL when unrecorded
 }
 
 type Availability struct {
@@ -79,8 +79,11 @@ func openDB(path string) (*sql.DB, error) {
 }
 
 func migrate(db *sql.DB) error {
+	if err := renameLegacySchema(db); err != nil {
+		return err
+	}
 	stmts := []string{
-		`CREATE TABLE IF NOT EXISTS concorsi(
+		`CREATE TABLE IF NOT EXISTS auditions(
 			id INTEGER PRIMARY KEY,
 			name TEXT NOT NULL,
 			city TEXT NOT NULL DEFAULT '',
@@ -95,18 +98,18 @@ func migrate(db *sql.DB) error {
 			work TEXT NOT NULL,
 			movement TEXT NOT NULL DEFAULT '',
 			excerpt TEXT NOT NULL DEFAULT '',
-			kind TEXT NOT NULL DEFAULT 'passo',
+			kind TEXT NOT NULL DEFAULT 'excerpt',
 			archived_at TEXT,
 			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 		)`,
-		`CREATE TABLE IF NOT EXISTS piece_concorso(
+		`CREATE TABLE IF NOT EXISTS piece_audition(
 			piece_id INTEGER NOT NULL REFERENCES pieces(id) ON DELETE CASCADE,
-			concorso_id INTEGER NOT NULL REFERENCES concorsi(id) ON DELETE CASCADE,
-			PRIMARY KEY(piece_id, concorso_id)
+			audition_id INTEGER NOT NULL REFERENCES auditions(id) ON DELETE CASCADE,
+			PRIMARY KEY(piece_id, audition_id)
 		)`,
-		`CREATE TABLE IF NOT EXISTS concorso_links(
+		`CREATE TABLE IF NOT EXISTS audition_links(
 			id INTEGER PRIMARY KEY,
-			concorso_id INTEGER NOT NULL REFERENCES concorsi(id) ON DELETE CASCADE,
+			audition_id INTEGER NOT NULL REFERENCES auditions(id) ON DELETE CASCADE,
 			label TEXT NOT NULL DEFAULT '',
 			url TEXT NOT NULL
 		)`,
@@ -140,8 +143,8 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate: %w", err)
 		}
 	}
-	// concorsi.archived_at was added after the first schema revision.
-	if _, err := db.Exec(`ALTER TABLE concorsi ADD COLUMN archived_at TEXT`); err != nil {
+	// auditions.archived_at was added after the first schema revision.
+	if _, err := db.Exec(`ALTER TABLE auditions ADD COLUMN archived_at TEXT`); err != nil {
 		// duplicate column means the migration already ran; anything else is real.
 		if !isDupColumnErr(err) {
 			return fmt.Errorf("migrate archived_at: %w", err)
@@ -154,39 +157,100 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate difficulty: %w", err)
 		}
 	}
-	// piece_concorso.estratto holds the excerpt each concorso asks for; the
+	// piece_audition.excerpt holds the excerpt each concorso asks for; the
 	// column started out as notes and is renamed when present.
-	if err := ensureLinkEstratto(db); err != nil {
+	if err := ensureLinkExcerpt(db); err != nil {
 		return err
 	}
-	// sessions.tempo holds the optional metronome mark (BPM) of a practice
+	// sessions.bpm holds the optional metronome mark of a practice
 	// session; NULL when the player did not record one.
-	if _, err := db.Exec(`ALTER TABLE sessions ADD COLUMN tempo INTEGER`); err != nil {
+	if _, err := db.Exec(`ALTER TABLE sessions ADD COLUMN bpm INTEGER`); err != nil {
 		// duplicate column means the migration already ran; anything else is real.
 		if !isDupColumnErr(err) {
-			return fmt.Errorf("migrate tempo: %w", err)
+			return fmt.Errorf("migrate bpm: %w", err)
+		}
+	}
+	// Stored values started out in Italian; rewrite them in English.
+	for _, q := range []string{
+		`UPDATE sessions SET note='skipped' WHERE note='saltato'`,
+		`UPDATE sessions SET note='auto-skipped' WHERE note='auto-saltato'`,
+		`UPDATE sessions SET note='postponed' WHERE note='rimandato'`,
+		`UPDATE pieces SET kind='excerpt' WHERE kind='passo'`,
+	} {
+		if _, err := db.Exec(q); err != nil {
+			return fmt.Errorf("migrate values: %w", err)
 		}
 	}
 	return nil
 }
 
-// ensureLinkEstratto renames the original notes column to estratto, or adds
-// estratto on installs that never had notes.
-func ensureLinkEstratto(db *sql.DB) error {
-	cols, err := tableColumns(db, "piece_concorso")
+// renameLegacySchema renames the original Italian tables and columns
+// to English. Every step is guarded, so the function is a no-op on
+// databases that already use the English schema. Stored values are
+// rewritten at the end of migrate, once the tables exist for sure.
+func renameLegacySchema(db *sql.DB) error {
+	tables := [][2]string{
+		{"concorsi", "auditions"},
+		{"piece_concorso", "piece_audition"},
+		{"concorso_links", "audition_links"},
+	}
+	for _, t := range tables {
+		exists, err := tableExists(db, t[0])
+		if err != nil {
+			return err
+		}
+		if !exists {
+			continue
+		}
+		if _, err := db.Exec(`ALTER TABLE ` + t[0] + ` RENAME TO ` + t[1]); err != nil {
+			return fmt.Errorf("migrate rename %s: %w", t[0], err)
+		}
+	}
+	cols := []struct{ table, from, to string }{
+		{"piece_audition", "concorso_id", "audition_id"},
+		{"piece_audition", "estratto", "excerpt"},
+		{"audition_links", "concorso_id", "audition_id"},
+		{"sessions", "tempo", "bpm"},
+	}
+	for _, c := range cols {
+		have, err := tableColumns(db, c.table)
+		if err != nil {
+			return err
+		}
+		if !have[c.from] {
+			continue
+		}
+		if _, err := db.Exec(`ALTER TABLE ` + c.table + ` RENAME COLUMN ` + c.from + ` TO ` + c.to); err != nil {
+			return fmt.Errorf("migrate rename column %s.%s: %w", c.table, c.from, err)
+		}
+	}
+	return nil
+}
+
+// tableExists reports whether a table is present in the database.
+func tableExists(db *sql.DB, name string) (bool, error) {
+	var n int
+	err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, name).Scan(&n)
+	return n > 0, err
+}
+
+// ensureLinkExcerpt renames the original notes column to excerpt, or adds
+// excerpt on installs that never had notes.
+func ensureLinkExcerpt(db *sql.DB) error {
+	cols, err := tableColumns(db, "piece_audition")
 	if err != nil {
-		return fmt.Errorf("migrate piece_concorso estratto: %w", err)
+		return fmt.Errorf("migrate piece_audition excerpt: %w", err)
 	}
 	switch {
-	case cols["estratto"]:
+	case cols["excerpt"]:
 		return nil
 	case cols["notes"]:
-		if _, err := db.Exec(`ALTER TABLE piece_concorso RENAME COLUMN notes TO estratto`); err != nil {
-			return fmt.Errorf("migrate piece_concorso estratto: %w", err)
+		if _, err := db.Exec(`ALTER TABLE piece_audition RENAME COLUMN notes TO excerpt`); err != nil {
+			return fmt.Errorf("migrate piece_audition excerpt: %w", err)
 		}
 	default:
-		if _, err := db.Exec(`ALTER TABLE piece_concorso ADD COLUMN estratto TEXT NOT NULL DEFAULT ''`); err != nil {
-			return fmt.Errorf("migrate piece_concorso estratto: %w", err)
+		if _, err := db.Exec(`ALTER TABLE piece_audition ADD COLUMN excerpt TEXT NOT NULL DEFAULT ''`); err != nil {
+			return fmt.Errorf("migrate piece_audition excerpt: %w", err)
 		}
 	}
 	return nil
@@ -257,7 +321,7 @@ func scanConcorsi(rows *sql.Rows) ([]Concorso, error) {
 
 func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 	q := `SELECT id, name, audition_date, weight, archived_at IS NOT NULL
-		FROM concorsi`
+		FROM auditions`
 	if !includeArchived {
 		q += ` WHERE archived_at IS NULL`
 	}
@@ -270,15 +334,15 @@ func (a *App) listConcorsi(includeArchived bool) ([]Concorso, error) {
 }
 
 func (a *App) pieceConcorsi(pieceID int64) ([]Concorso, error) {
-	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.estratto
-		FROM concorsi c JOIN piece_concorso pc ON pc.concorso_id=c.id
+	rows, err := a.db.Query(`SELECT c.id, c.name, c.audition_date, c.weight, c.archived_at IS NOT NULL, pc.excerpt
+		FROM auditions c JOIN piece_audition pc ON pc.audition_id=c.id
 		WHERE pc.piece_id=? ORDER BY c.audition_date`, pieceID)
 	if err != nil {
 		return nil, err
 	}
 	return collect(rows, func(rows *sql.Rows) (Concorso, error) {
 		var c Concorso
-		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Estratto)
+		err := rows.Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived, &c.Excerpt)
 		return c, err
 	})
 }
@@ -293,8 +357,8 @@ type ConcorsoLink struct {
 }
 
 func (a *App) concorsoLinks(concorsoID int64) ([]ConcorsoLink, error) {
-	rows, err := a.db.Query(`SELECT id, concorso_id, label, url FROM concorso_links
-		WHERE concorso_id=? ORDER BY id`, concorsoID)
+	rows, err := a.db.Query(`SELECT id, audition_id, label, url FROM audition_links
+		WHERE audition_id=? ORDER BY id`, concorsoID)
 	if err != nil {
 		return nil, err
 	}
@@ -306,13 +370,13 @@ func (a *App) concorsoLinks(concorsoID int64) ([]ConcorsoLink, error) {
 }
 
 func (a *App) addConcorsoLink(concorsoID int64, label, url string) error {
-	_, err := a.db.Exec(`INSERT INTO concorso_links(concorso_id, label, url) VALUES(?,?,?)`,
+	_, err := a.db.Exec(`INSERT INTO audition_links(audition_id, label, url) VALUES(?,?,?)`,
 		concorsoID, label, url)
 	return err
 }
 
 func (a *App) deleteConcorsoLink(concorsoID, linkID int64) error {
-	_, err := a.db.Exec(`DELETE FROM concorso_links WHERE id=? AND concorso_id=?`, linkID, concorsoID)
+	_, err := a.db.Exec(`DELETE FROM audition_links WHERE id=? AND audition_id=?`, linkID, concorsoID)
 	return err
 }
 
@@ -368,11 +432,11 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool, qu
 	args := []any{}
 	where := ""
 	if concorsoID > 0 {
-		q += ` JOIN piece_concorso pc ON pc.piece_id=p.id`
-		where += ` AND pc.concorso_id=?`
+		q += ` JOIN piece_audition pc ON pc.piece_id=p.id`
+		where += ` AND pc.audition_id=?`
 		args = append(args, concorsoID)
 	}
-	if kind == kindPasso || kind == kindSolo {
+	if kind == kindExcerpt || kind == kindSolo {
 		where += ` AND p.kind=?`
 		args = append(args, kind)
 	}
@@ -382,8 +446,8 @@ func (a *App) listPieces(concorsoID int64, kind string, includeArchived bool, qu
 	if query = strings.TrimSpace(query); query != "" {
 		like := "%" + strings.ToLower(query) + "%"
 		where += ` AND (LOWER(p.composer) LIKE ? OR LOWER(p.work) LIKE ? OR LOWER(p.movement) LIKE ? OR LOWER(p.kind) LIKE ?
-			OR EXISTS (SELECT 1 FROM piece_concorso pcq JOIN concorsi cq ON cq.id = pcq.concorso_id
-				WHERE pcq.piece_id = p.id AND (LOWER(cq.name) LIKE ? OR LOWER(pcq.estratto) LIKE ?)))`
+			OR EXISTS (SELECT 1 FROM piece_audition pcq JOIN auditions cq ON cq.id = pcq.audition_id
+				WHERE pcq.piece_id = p.id AND (LOWER(cq.name) LIKE ? OR LOWER(pcq.excerpt) LIKE ?)))`
 		args = append(args, like, like, like, like, like, like)
 	}
 	q += ` WHERE 1=1` + where + ` ORDER BY p.composer, p.work, p.movement`
@@ -479,7 +543,7 @@ func (a *App) daysSincePractice(pieceID int64, today string) (days int, ok bool,
 
 type todayMark struct {
 	Logged    int
-	Skipped   bool // a 'saltato' marker exists for today
+	Skipped   bool // a 'skipped' marker exists for today
 	Practiced bool // a session with real study time (minutes>0) exists for today
 }
 
@@ -505,9 +569,9 @@ func (a *App) todayMark(pieceID int64, today string) (todayMark, error) {
 		if minutes > 0 {
 			m.Practiced = true
 		}
-		// 'rimandato' is honored only for markers written before the
+		// 'postponed' is honored only for markers written before the
 		// postpone feature was removed: they skip the piece for today.
-		if note == "saltato" || note == "rimandato" {
+		if note == "skipped" || note == "postponed" {
 			m.Skipped = true
 		}
 	}

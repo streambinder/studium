@@ -19,11 +19,11 @@ func TestStampPrepLevels(t *testing.T) {
 	}
 	today := time.Now().Format("2006-01-02")
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`,
 		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Bach', 'Suite')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Haydn', 'Concerto')`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(2, 1)`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence) VALUES('` + today + `', 1, 180, 5)`,
 	}
 	for _, s := range stmts {

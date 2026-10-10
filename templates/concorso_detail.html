@@ -57,7 +57,7 @@
 <span class="prep-pin pin-corner" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span>
 <div class="card-head"><strong><a class="card-link" href="/diario/pezzo/{{.ID}}">{{.Composer}} — {{.Work}}</a></strong></div>
 <div class="meta movement-row"><span class="badge kind">{{.Kind}}</span>{{if .Movement}}<span>{{.Movement}}</span>{{end}}</div>
-{{$e := ""}}{{range .Concorsi}}{{if eq .ID $.Concorso.ID}}{{$e = .Estratto}}{{end}}{{end}}{{if $e}}<div class="meta">{{$e}}</div>{{end}}
+{{$e := ""}}{{range .Concorsi}}{{if eq .ID $.Concorso.ID}}{{$e = .Excerpt}}{{end}}{{end}}{{if $e}}<div class="meta">{{$e}}</div>{{end}}
 </article>
 {{else}}<p class="empty">Nessun pezzo collegato: collegali dalla pagina Pezzi.</p>{{end}}
 </div>

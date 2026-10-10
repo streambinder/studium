@@ -25,13 +25,13 @@ func TestPezzoDetailShowsScore(t *testing.T) {
 	today := todayStr()
 	future := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
 		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Strauss', 'Don Juan')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Bach', 'Suite')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(3, 'Mahler', 'Sinfonia')`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 3, 0, 0, 'saltato')`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(3, 1)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 3, 0, 0, 'skipped')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

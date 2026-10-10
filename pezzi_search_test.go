@@ -19,11 +19,11 @@ func TestListPiecesSearch(t *testing.T) {
 		t.Fatalf("migrate failed: %v", err)
 	}
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '2027-01-08', 5)`,
-		`INSERT INTO pieces(id, composer, work, movement, kind, difficulty) VALUES(1, 'Strauss', 'Don Juan', '', 'passo', 5)`,
-		`INSERT INTO pieces(id, composer, work, movement, kind, difficulty) VALUES(2, 'Beethoven', 'Sinfonia n. 5', 'III mov.', 'passo', 3)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id, estratto) VALUES(1, 1, 'inizio')`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id, estratto) VALUES(2, 1, 'scherzo')`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '2027-01-08', 5)`,
+		`INSERT INTO pieces(id, composer, work, movement, kind, difficulty) VALUES(1, 'Strauss', 'Don Juan', '', 'excerpt', 5)`,
+		`INSERT INTO pieces(id, composer, work, movement, kind, difficulty) VALUES(2, 'Beethoven', 'Sinfonia n. 5', 'III mov.', 'excerpt', 3)`,
+		`INSERT INTO piece_audition(piece_id, audition_id, excerpt) VALUES(1, 1, 'inizio')`,
+		`INSERT INTO piece_audition(piece_id, audition_id, excerpt) VALUES(2, 1, 'scherzo')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
@@ -40,7 +40,7 @@ func TestListPiecesSearch(t *testing.T) {
 		{"iii mov", 2}, // movement
 		{"cecilia", 1}, // concorso name matches both, first is Strauss
 		{"scherzo", 2}, // excerpt
-		{"passo", 1},   // kind matches both, first is Strauss
+		{"excerpt", 1}, // kind matches both, first is Strauss
 		{"inesistente", 0},
 		{"", 1}, // empty query = no filter, all pieces
 	}

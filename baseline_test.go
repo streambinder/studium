@@ -90,7 +90,7 @@ func TestValuedPieceIDs(t *testing.T) {
 		minutes, conf int
 		note          string
 	}{
-		{1, 0, 0, "saltato"},
+		{1, 0, 0, "skipped"},
 		{2, 0, 0, "baseline"},
 		{3, 0, 3, ""},
 		{4, 20, 0, ""},
@@ -137,7 +137,7 @@ func TestLatestConfidenceBaselineZero(t *testing.T) {
 	if !rated || conf != 0 {
 		t.Fatalf("baseline 0: want rated with conf 0, got rated=%v conf=%v", rated, conf)
 	}
-	if _, err := db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES(?,1,0,0,'saltato')`, today); err != nil {
+	if _, err := db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES(?,1,0,0,'skipped')`, today); err != nil {
 		t.Fatal(err)
 	}
 	conf, rated, err = a.latestConfidence(1)

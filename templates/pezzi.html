@@ -16,13 +16,13 @@
 <label>Movimento <input type="text" name="movement" placeholder="es. II mov. Andante"></label>
 <label>Tipo
 <select name="kind">
-<option value="passo">passo d'orchestra</option>
+<option value="excerpt">passo d'orchestra</option>
 <option value="solo">solistico</option>
 </select></label>
 </div>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value"> <output>3</output></label>
 <fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-estratto"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="estratto-{{.ID}}" placeholder="estratto per questo concorso"></div>{{end}}
+{{range .Concorsi}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}"> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
 </fieldset>
 <button type="submit">Aggiungi</button>
 </form>
@@ -38,7 +38,7 @@
 <label>Tipo
 <select name="kind" onchange="this.form.submit()">
 <option value="">tutti</option>
-<option value="passo" {{if eq $.FilterKind "passo"}}selected{{end}}>passi</option>
+<option value="excerpt" {{if eq $.FilterKind "excerpt"}}selected{{end}}>passi</option>
 <option value="solo" {{if eq $.FilterKind "solo"}}selected{{end}}>solistici</option>
 </select></label>
 <label class="check"><input type="checkbox" name="archiviati" value="1" {{if .ShowArchived}}checked{{end}} onchange="this.form.submit()"> mostra archiviati</label>

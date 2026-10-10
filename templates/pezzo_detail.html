@@ -4,7 +4,7 @@
 <h1><span class="prep-pin pin-title" tabindex="0" aria-label="Preparazione {{pct .Piece.Prep}}%"><span class="prep-dot lv{{.Piece.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Piece.Prep}}%</span></span>{{.Piece.Composer}} — {{.Piece.Work}}{{if .Piece.Archived}} <span class="badge muted">archiviato</span>{{end}}</h1>
 {{if .Piece.Movement}}<p class="piece-subtitle">{{.Piece.Movement}}</p>{{end}}
 <div class="concorso-rows">
-{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{if .Estratto}}<span class="meta">{{.Estratto}}</span>{{end}}</div>
+{{range .Piece.Concorsi}}<div class="concorso-row"><span class="chip{{if .Archived}} muted{{end}}">{{.Name}}<span class="prep-pin" tabindex="0" aria-label="Preparazione {{pct .Prep}}%"><span class="prep-dot lv{{.Level}}"></span><span class="pin-tip" aria-hidden="true">Preparazione {{pct .Prep}}%</span></span></span>{{if .Excerpt}}<span class="meta">{{.Excerpt}}</span>{{end}}</div>
 {{else}}<p class="meta">Nessun concorso collegato.</p>{{end}}
 </div>
 <div class="row btns">
@@ -65,13 +65,13 @@
 <div class="card-head"><strong>{{dateIT .Date}}</strong>
 {{if gt .Minutes 0}}<span class="badge"><span data-count="{{.Minutes}}">{{dur .Minutes}}</span></span>{{end}}
 {{if gt .Confidence 0}}<span class="badge kind">sicurezza {{.Confidence}}/5</span>{{end}}
-{{if .Tempo.Valid}}<span class="badge kind">metronomo {{.Tempo.Int64}}</span>{{end}}
-{{if eq .Note "rimandato"}}<span class="badge pin">rimandato</span>{{end}}
-{{if eq .Note "saltato"}}<span class="badge muted">saltato</span>{{end}}
-{{if eq .Note "auto-saltato"}}<span class="badge muted">saltato dal piano</span>{{end}}
+{{if .BPM.Valid}}<span class="badge kind">metronomo {{.BPM.Int64}}</span>{{end}}
+{{if eq .Note "postponed"}}<span class="badge pin">rimandato</span>{{end}}
+{{if eq .Note "skipped"}}<span class="badge muted">saltato</span>{{end}}
+{{if eq .Note "auto-skipped"}}<span class="badge muted">saltato dal piano</span>{{end}}
 {{if eq .Note "baseline"}}<span class="badge kind">valutazione</span>{{end}}
 </div>
-{{if and (ne .Note "rimandato") (ne .Note "saltato") (ne .Note "auto-saltato") (ne .Note "baseline") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
+{{if and (ne .Note "postponed") (ne .Note "skipped") (ne .Note "auto-skipped") (ne .Note "baseline") (.Note)}}<div class="meta">{{.Note}}</div>{{end}}
 </article>
 {{else}}
 <p class="empty">Nessuna seduta per questo pezzo.</p>

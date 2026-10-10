@@ -172,7 +172,7 @@ func TestAutoSkipOverflowTrimsBottomFirst(t *testing.T) {
 		t.Fatalf("want pieces 1 and 2 to survive, got %+v", got)
 	}
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=3 AND note='auto-saltato'`).Scan(&n); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=3 AND note='auto-skipped'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 1 {
@@ -198,13 +198,13 @@ func TestConcorsoReadinessAveragesLinkedPieces(t *testing.T) {
 		t.Fatalf("migrate failed: %v", err)
 	}
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Futuro', '2027-01-08', 3)`,
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(2, 'Passato', '2020-01-01', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Futuro', '2027-01-08', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(2, 'Passato', '2020-01-01', 3)`,
 		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Bach', 'Suite')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Haydn', 'Concerto')`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 2)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(2, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 2)`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence) VALUES('2026-10-01', 1, 120, 5)`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence) VALUES('2026-10-02', 1, 120, 5)`,
 	}

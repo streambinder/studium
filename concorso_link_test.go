@@ -29,7 +29,7 @@ func TestConcorsoLinksCRUD(t *testing.T) {
 	if err := migrate(db); err != nil {
 		t.Fatalf("migrate failed: %v", err)
 	}
-	if _, err := db.Exec(`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`); err != nil {
 		t.Fatal(err)
 	}
 	a := &App{db: db}

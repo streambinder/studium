@@ -20,23 +20,23 @@ func TestDiarioGiornoSkippedOnlyPiecesGetHomepageCards(t *testing.T) {
 		t.Fatalf("migrate failed: %v", err)
 	}
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Beta', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(3, 'Gamma', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(4, 'Delta', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(5, 'Epsilon', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(4, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(5, 1)`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 0, 0, 'saltato')`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 2, 0, 0, 'auto-saltato')`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Beta', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(3, 'Gamma', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(4, 'Delta', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(5, 'Epsilon', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(2, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(3, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(4, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(5, 1)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 0, 0, 'skipped')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 2, 0, 0, 'auto-skipped')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 3, 30, 4, '')`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 3, 0, 0, 'auto-saltato')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 3, 0, 0, 'auto-skipped')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 4, 0, 3, 'baseline')`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 5, 0, 0, 'saltato')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 5, 0, 0, 'skipped')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 5, 15, 3, '')`,
 	}
 	for _, s := range stmts {
@@ -104,10 +104,10 @@ func TestDiarioGiornoOnlySkipsHasNoEmptyState(t *testing.T) {
 		t.Fatalf("migrate failed: %v", err)
 	}
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 0, 0, 'saltato')`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 0, 0, 'skipped')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

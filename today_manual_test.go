@@ -19,13 +19,13 @@ func TestTodayManualSessionWithoutAvailability(t *testing.T) {
 	if err := migrate(db); err != nil {
 		t.Fatalf("migrate failed: %v", err)
 	}
-	if _, err := db.Exec(`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Haydn', 'Concerto', 'concerto', 3)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`); err != nil {
 		t.Fatal(err)
 	}
 	today := todayStr()
@@ -60,13 +60,13 @@ func TestTodayZeroMinuteValuationDoesNotCountAsStudied(t *testing.T) {
 	if err := migrate(db); err != nil {
 		t.Fatalf("migrate failed: %v", err)
 	}
-	if _, err := db.Exec(`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2027-01-08', 3)`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.Exec(`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Haydn', 'Concerto', 'concerto', 3)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`); err != nil {
+	if _, err := db.Exec(`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`); err != nil {
 		t.Fatal(err)
 	}
 	today := todayStr()

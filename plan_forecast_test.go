@@ -34,16 +34,16 @@ func TestForecastEntryAfterRivalConcorso(t *testing.T) {
 	}
 	a, today := forecastTestApp(t, func(db *sql.DB, today string) {
 		stmts := []string{
-			`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Vicino', '` + day(today, 10) + `', 5)`,
-			`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(2, 'Lontano', '` + day(today, 40) + `', 5)`,
+			`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Vicino', '` + day(today, 10) + `', 5)`,
+			`INSERT INTO auditions(id, name, audition_date, weight) VALUES(2, 'Lontano', '` + day(today, 40) + `', 5)`,
 			`INSERT INTO pieces(id, composer, work) VALUES(100, 'Target', 'Pezzo')`,
-			`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(100, 2)`,
+			`INSERT INTO piece_audition(piece_id, audition_id) VALUES(100, 2)`,
 			`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 100, 0, 3, 'baseline')`,
 		}
 		for i := 1; i <= 9; i++ {
 			stmts = append(stmts,
 				`INSERT INTO pieces(id, composer, work) VALUES(`+strconv.Itoa(i)+`, 'Rivale', 'Pezzo')`,
-				`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(`+strconv.Itoa(i)+`, 1)`)
+				`INSERT INTO piece_audition(piece_id, audition_id) VALUES(`+strconv.Itoa(i)+`, 1)`)
 		}
 		for _, s := range stmts {
 			if _, err := db.Exec(s); err != nil {
@@ -79,15 +79,15 @@ func TestForecastNeverEnters(t *testing.T) {
 	}
 	a, today := forecastTestApp(t, func(db *sql.DB, today string) {
 		stmts := []string{
-			`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Unico', '` + day(today, 40) + `', 5)`,
+			`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Unico', '` + day(today, 40) + `', 5)`,
 			`INSERT INTO pieces(id, composer, work) VALUES(100, 'Target', 'Pezzo')`,
-			`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(100, 1)`,
+			`INSERT INTO piece_audition(piece_id, audition_id) VALUES(100, 1)`,
 			`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 100, 0, 5, 'baseline')`,
 		}
 		for i := 1; i <= 9; i++ {
 			stmts = append(stmts,
 				`INSERT INTO pieces(id, composer, work) VALUES(`+strconv.Itoa(i)+`, 'Rivale', 'Pezzo')`,
-				`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(`+strconv.Itoa(i)+`, 1)`,
+				`INSERT INTO piece_audition(piece_id, audition_id) VALUES(`+strconv.Itoa(i)+`, 1)`,
 				`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('`+today+`', `+strconv.Itoa(i)+`, 0, 1, 'baseline')`)
 		}
 		for _, s := range stmts {

@@ -24,9 +24,9 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 	today := todayStr()
 	future := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'passo', 4)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'excerpt', 4)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
@@ -54,7 +54,7 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 	if err := db.QueryRow(`SELECT note FROM sessions WHERE piece_id=1`).Scan(&note); err != nil {
 		t.Fatal(err)
 	}
-	if note != "auto-saltato" {
+	if note != "auto-skipped" {
 		t.Fatalf("marker note: want auto-saltato, got %q", note)
 	}
 
@@ -73,7 +73,7 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=1 AND note='auto-saltato'`).Scan(&n); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=1 AND note='auto-skipped'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 1 {
@@ -82,7 +82,7 @@ func TestAutoSkipDoesNotExcludeFromPlan(t *testing.T) {
 
 	// A manual skip, instead, excludes the piece for the whole day.
 	if _, err := db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
-		VALUES(?,1,0,0,'saltato')`, today); err != nil {
+		VALUES(?,1,0,0,'skipped')`, today); err != nil {
 		t.Fatal(err)
 	}
 	items, _, err = a.buildPlan(today)

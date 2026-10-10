@@ -13,13 +13,13 @@
 <label>Movimento <input type="text" name="movement" value="{{.Piece.Movement}}"></label>
 <label>Tipo
 <select name="kind">
-<option value="passo" {{if eq .Piece.Kind "passo"}}selected{{end}}>passo d'orchestra</option>
+<option value="excerpt" {{if eq .Piece.Kind "excerpt"}}selected{{end}}>passo d'orchestra</option>
 <option value="solo" {{if eq .Piece.Kind "solo"}}selected{{end}}>solistico</option>
 </select></label>
 </div>
 <label>Difficoltà <input type="range" name="difficulty" min="1" max="5" step="1" value="{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}" oninput="this.nextElementSibling.textContent=this.value"> <output>{{if .Piece.Difficulty}}{{.Piece.Difficulty}}{{else}}3{{end}}</output></label>
 <fieldset><legend>Concorsi</legend>
-{{range .Concorsi}}<div class="link-estratto"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="estratto-{{.ID}}" value="{{index $.Estratto .ID}}" placeholder="estratto per questo concorso"></div>{{end}}
+{{range .Concorsi}}<div class="link-excerpt"><label class="check"><input type="checkbox" name="concorso" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}}> {{.Name}}</label> <input type="text" name="excerpt-{{.ID}}" value="{{index $.Excerpt .ID}}" placeholder="excerpt per questo concorso"></div>{{end}}
 </fieldset>
 <div class="row btns">
 <button type="submit">Salva</button>

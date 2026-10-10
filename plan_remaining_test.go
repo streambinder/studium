@@ -46,9 +46,9 @@ func TestAutoSkipGraceBuffer(t *testing.T) {
 	today := todayStr()
 	future := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'passo', 4)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'excerpt', 4)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
@@ -74,7 +74,7 @@ func TestAutoSkipGraceBuffer(t *testing.T) {
 		t.Fatalf("within grace: want 1 kept, got %d", len(kept))
 	}
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE note='auto-saltato'`).Scan(&n); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE note='auto-skipped'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 0 {
@@ -101,11 +101,11 @@ func TestSessionSaveClearsSkipMarkers(t *testing.T) {
 	}
 	today := todayStr()
 	stmts := []string{
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'passo', 4)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Brahms', 'Sinfonia n. 3', 'passo', 4)`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 1, 0, 0, 'saltato')`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 1, 0, 0, 'auto-saltato')`,
-		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 2, 0, 0, 'auto-saltato')`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Mahler', 'Sinfonia n. 2', 'excerpt', 4)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Brahms', 'Sinfonia n. 3', 'excerpt', 4)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 1, 0, 0, 'skipped')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 1, 0, 0, 'auto-skipped')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('` + today + `', 2, 0, 0, 'auto-skipped')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
@@ -125,7 +125,7 @@ func TestSessionSaveClearsSkipMarkers(t *testing.T) {
 	}
 	post("1", "20")
 	var markers int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=1 AND note IN ('saltato','rimandato','auto-saltato')`).Scan(&markers); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=1 AND note IN ('skipped','postponed','auto-skipped')`).Scan(&markers); err != nil {
 		t.Fatal(err)
 	}
 	if markers != 0 {
@@ -140,7 +140,7 @@ func TestSessionSaveClearsSkipMarkers(t *testing.T) {
 	}
 	// A zero-minute save is not studying: the other piece keeps its marker.
 	post("2", "0")
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=2 AND note='auto-saltato'`).Scan(&markers); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE piece_id=2 AND note='auto-skipped'`).Scan(&markers); err != nil {
 		t.Fatal(err)
 	}
 	if markers != 1 {
@@ -167,15 +167,15 @@ func TestTodayNoAutoSkipBeforeWindowStarts(t *testing.T) {
 	today := todayStr()
 	future := time.Now().AddDate(0, 0, 30).Format("2006-01-02")
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 5)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Beta', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(3, 'Gamma', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(4, 'Delta', 'Pezzo', 'passo', 3)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(4, 1)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Santa Cecilia', '` + future + `', 5)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(2, 'Beta', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(3, 'Gamma', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(4, 'Delta', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(2, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(3, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(4, 1)`,
 		// Every piece valued, so the plan branch runs.
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-01', 1, 0, 3, 'baseline')`,
 		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-01', 2, 0, 3, 'baseline')`,
@@ -201,7 +201,7 @@ func TestTodayNoAutoSkipBeforeWindowStarts(t *testing.T) {
 		t.Fatalf("status %d body %.200s", rec.Code, rec.Body.String())
 	}
 	var markers int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE note='auto-saltato'`).Scan(&markers); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM sessions WHERE note='auto-skipped'`).Scan(&markers); err != nil {
 		t.Fatal(err)
 	}
 	if markers != 0 {

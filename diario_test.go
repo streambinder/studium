@@ -36,15 +36,15 @@ func TestPrepTilesForFiltersByConcorso(t *testing.T) {
 		t.Fatalf("migrate failed: %v", err)
 	}
 	stmts := []string{
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
-		`INSERT INTO concorsi(id, name, audition_date, weight) VALUES(2, 'Napoli', '2026-12-14', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(1, 'Roma', '2026-11-23', 3)`,
+		`INSERT INTO auditions(id, name, audition_date, weight) VALUES(2, 'Napoli', '2026-12-14', 3)`,
 		`INSERT INTO pieces(id, composer, work) VALUES(1, 'Bach', 'Suite')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(2, 'Haydn', 'Concerto')`,
 		`INSERT INTO pieces(id, composer, work) VALUES(3, 'Piatti', 'Capriccio')`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(1, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(2, 2)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 1)`,
-		`INSERT INTO piece_concorso(piece_id, concorso_id) VALUES(3, 2)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(1, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(2, 2)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(3, 1)`,
+		`INSERT INTO piece_audition(piece_id, audition_id) VALUES(3, 2)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

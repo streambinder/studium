@@ -651,7 +651,7 @@ func remainingToday(avail []Availability, nowMin int) int {
 // autoSkipOverflow drops the plan pieces that no longer fit today's
 // remaining time, least urgent first: unpracticed pieces whose summed
 // suggested minutes exceed what is left, plus the grace buffer, leave
-// the plan with an 'auto-saltato' trace in the diary. Unlike a manual
+// the plan with an 'auto-skipped' trace in the diary. Unlike a manual
 // skip, the marker never excludes the piece: add time later in the
 // day and it is back.
 func (a *App) autoSkipOverflow(items []planItem, remaining, grace int, today string) ([]planItem, error) {
@@ -673,9 +673,9 @@ func (a *App) autoSkipOverflow(items []planItem, remaining, grace int, today str
 			break
 		}
 		if _, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note)
-			SELECT ?,?,0,0,'auto-saltato'
+			SELECT ?,?,0,0,'auto-skipped'
 			WHERE NOT EXISTS (SELECT 1 FROM sessions
-				WHERE date=? AND piece_id=? AND note='auto-saltato')`,
+				WHERE date=? AND piece_id=? AND note='auto-skipped')`,
 			today, items[victim].Piece.ID, today, items[victim].Piece.ID); err != nil {
 			return nil, err
 		}
@@ -873,7 +873,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 		shown[e.P.ID] = true
 	}
 	srows, err := a.db.Query(`SELECT piece_id, note FROM sessions
-		WHERE date = ? AND note IN ('saltato', 'rimandato', 'auto-saltato')`, today)
+		WHERE date = ? AND note IN ('skipped', 'postponed', 'auto-skipped')`, today)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -887,7 +887,7 @@ func (a *App) handleToday(w http.ResponseWriter, _ *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if note == "auto-saltato" {
+		if note == "auto-skipped" {
 			if _, seen := auto[pid]; !seen {
 				auto[pid] = true
 			}
@@ -993,14 +993,14 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dati seduta non validi", http.StatusBadRequest)
 		return
 	}
-	var tempo any
-	if raw := strings.TrimSpace(r.FormValue("tempo")); raw != "" {
+	var bpmVal any
+	if raw := strings.TrimSpace(r.FormValue("bpm")); raw != "" {
 		if bpm, err := strconv.Atoi(raw); err == nil && bpm > 0 && bpm <= 400 {
-			tempo = bpm
+			bpmVal = bpm
 		}
 	}
-	res, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note, tempo)
-		VALUES(?,?,?,?,?,?)`, todayStr(), pieceID, minutes, conf, r.FormValue("note"), tempo)
+	res, err := a.db.Exec(`INSERT INTO sessions(date, piece_id, minutes, confidence, note, bpm)
+		VALUES(?,?,?,?,?,?)`, todayStr(), pieceID, minutes, conf, r.FormValue("note"), bpmVal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -1010,7 +1010,7 @@ func (a *App) handleSession(w http.ResponseWriter, r *http.Request) {
 	if minutes > 0 {
 		savedID, _ := res.LastInsertId()
 		if _, err := a.db.Exec(`DELETE FROM sessions
-			WHERE date=? AND piece_id=? AND id<>? AND note IN ('saltato','rimandato','auto-saltato')`,
+			WHERE date=? AND piece_id=? AND id<>? AND note IN ('skipped','postponed','auto-skipped')`,
 			todayStr(), pieceID, savedID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -1041,7 +1041,7 @@ func (a *App) markSession(w http.ResponseWriter, r *http.Request, note string) {
 }
 
 func (a *App) handleSkip(w http.ResponseWriter, r *http.Request) {
-	a.markSession(w, r, "saltato")
+	a.markSession(w, r, "skipped")
 }
 
 // ---------- pezzi ----------
@@ -1094,9 +1094,9 @@ func clampDifficulty(r *http.Request) int {
 	return d
 }
 
-// linkEstratto reads the per-link excerpt submitted for a concorso checkbox.
-func linkEstratto(r *http.Request, concorsoID int64) string {
-	return strings.TrimSpace(r.FormValue("estratto-" + strconv.FormatInt(concorsoID, 10)))
+// linkExcerpt reads the per-link excerpt submitted for a concorso checkbox.
+func linkExcerpt(r *http.Request, concorsoID int64) string {
+	return strings.TrimSpace(r.FormValue("excerpt-" + strconv.FormatInt(concorsoID, 10)))
 }
 
 func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
@@ -1106,7 +1106,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 	}
 	kind := r.FormValue("kind")
 	if kind != kindSolo {
-		kind = kindPasso
+		kind = kindExcerpt
 	}
 	composer := strings.TrimSpace(r.FormValue("composer"))
 	work := strings.TrimSpace(r.FormValue("work"))
@@ -1126,7 +1126,7 @@ func (a *App) handleAddPiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, cid := range formIDs(r, "concorso") {
-		if _, err := a.db.Exec(`INSERT OR IGNORE INTO piece_concorso(piece_id, concorso_id, estratto) VALUES(?,?,?)`, pid, cid, linkEstratto(r, cid)); err != nil {
+		if _, err := a.db.Exec(`INSERT OR IGNORE INTO piece_audition(piece_id, audition_id, excerpt) VALUES(?,?,?)`, pid, cid, linkExcerpt(r, cid)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1141,7 +1141,7 @@ type pieceFormData struct {
 	Piece    Piece
 	Concorsi []Concorso
 	Selected map[int64]bool
-	Estratto map[int64]string
+	Excerpt  map[int64]string
 }
 
 func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
@@ -1154,13 +1154,13 @@ func (a *App) handleEditPiece(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sel := map[int64]bool{}
-	estratti := map[int64]string{}
+	excerpts := map[int64]string{}
 	for _, c := range p.Concorsi {
 		sel[c.ID] = true
-		estratti[c.ID] = c.Estratto
+		excerpts[c.ID] = c.Excerpt
 	}
 	a.render(w, "pezzo_form.html", pieceFormData{
-		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel, Estratto: estratti,
+		Title: "Modifica pezzo", Nav: "pezzi", Piece: p, Concorsi: concorsi, Selected: sel, Excerpt: excerpts,
 	})
 }
 
@@ -1216,7 +1216,7 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 	}
 	kind := r.FormValue("kind")
 	if kind != kindSolo {
-		kind = kindPasso
+		kind = kindExcerpt
 	}
 	_, err := a.db.Exec(`UPDATE pieces SET composer=?, work=?, movement=?, kind=?, difficulty=?
 		WHERE id=?`, r.FormValue("composer"), r.FormValue("work"),
@@ -1235,12 +1235,12 @@ func (a *App) handleUpdatePiece(w http.ResponseWriter, r *http.Request) {
 			log.Printf("rollback: %v", rerr)
 		}
 	}()
-	if _, err := tx.Exec(`DELETE FROM piece_concorso WHERE piece_id=?`, id); err != nil {
+	if _, err := tx.Exec(`DELETE FROM piece_audition WHERE piece_id=?`, id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	for _, cid := range formIDs(r, "concorso") {
-		if _, err := tx.Exec(`INSERT INTO piece_concorso(piece_id, concorso_id, estratto) VALUES(?,?,?)`, id, cid, linkEstratto(r, cid)); err != nil {
+		if _, err := tx.Exec(`INSERT INTO piece_audition(piece_id, audition_id, excerpt) VALUES(?,?,?)`, id, cid, linkExcerpt(r, cid)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1313,11 +1313,11 @@ func (a *App) handleConcorsi(w http.ResponseWriter, _ *http.Request) {
 	var rows []concorsoRow
 	for _, c := range cs {
 		var n, nl int
-		if err := a.db.QueryRow(`SELECT COUNT(*) FROM piece_concorso WHERE concorso_id=?`, c.ID).Scan(&n); err != nil {
+		if err := a.db.QueryRow(`SELECT COUNT(*) FROM piece_audition WHERE audition_id=?`, c.ID).Scan(&n); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if err := a.db.QueryRow(`SELECT COUNT(*) FROM concorso_links WHERE concorso_id=?`, c.ID).Scan(&nl); err != nil {
+		if err := a.db.QueryRow(`SELECT COUNT(*) FROM audition_links WHERE audition_id=?`, c.ID).Scan(&nl); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1363,7 +1363,7 @@ func (a *App) handleAddConcorso(w http.ResponseWriter, r *http.Request) {
 	if !lok {
 		return
 	}
-	res, err := a.db.Exec(`INSERT INTO concorsi(name, audition_date, weight)
+	res, err := a.db.Exec(`INSERT INTO auditions(name, audition_date, weight)
 		VALUES(?,?,?)`, name, date, validWeight(formInt(r, "weight", 1)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1390,7 +1390,7 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	_, err := a.db.Exec(`UPDATE concorsi SET name=?, audition_date=?, weight=?
+	_, err := a.db.Exec(`UPDATE auditions SET name=?, audition_date=?, weight=?
 		WHERE id=?`, name, date, validWeight(formInt(r, "weight", 1)), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1405,11 +1405,11 @@ func (a *App) handleUpdateConcorso(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleArchiveConcorso(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE concorsi SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/concorsi", "concorso archived")
+	a.setArchived(w, r, `UPDATE auditions SET archived_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?`, "/concorsi", "concorso archived")
 }
 
 func (a *App) handleRestoreConcorso(w http.ResponseWriter, r *http.Request) {
-	a.setArchived(w, r, `UPDATE concorsi SET archived_at=NULL WHERE id=?`, "/concorsi", "concorso restored")
+	a.setArchived(w, r, `UPDATE auditions SET archived_at=NULL WHERE id=?`, "/concorsi", "concorso restored")
 }
 
 func (a *App) concorsoOr404(w http.ResponseWriter, r *http.Request) (Concorso, bool) {
@@ -1420,7 +1420,7 @@ func (a *App) concorsoOr404(w http.ResponseWriter, r *http.Request) (Concorso, b
 	}
 	var c Concorso
 	err := a.db.QueryRow(`SELECT id, name, audition_date, weight, archived_at IS NOT NULL
-		FROM concorsi WHERE id=?`, id).Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived)
+		FROM auditions WHERE id=?`, id).Scan(&c.ID, &c.Name, &c.Date, &c.Weight, &c.Archived)
 	if err != nil {
 		http.NotFound(w, r)
 		return Concorso{}, false
@@ -1747,7 +1747,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		pieceLevel[t.PieceID] = t.Level
 		piecePrep[t.PieceID] = t.Prep
 	}
-	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note, s.tempo,
+	rows, ok := a.queryRows(w, `SELECT s.id, s.date, s.piece_id, s.minutes, s.confidence, s.note, s.bpm,
 		p.id, p.composer, p.work, p.movement
 		FROM sessions s JOIN pieces p ON p.id = s.piece_id
 		WHERE s.date = ? ORDER BY p.composer, p.work, s.id`, date)
@@ -1764,7 +1764,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		var s Session
 		var pid int64
 		var composer, work, movement string
-		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.Tempo,
+		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.BPM,
 			&pid, &composer, &work, &movement); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -1781,9 +1781,9 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 			data.Practiced++
 		}
 		switch s.Note {
-		case "saltato", "rimandato":
+		case "skipped", "postponed":
 			skipAuto[s.PieceID] = false // an explicit skip wins over the plan's marker
-		case "auto-saltato":
+		case "auto-skipped":
 			if _, seen := skipAuto[s.PieceID]; !seen {
 				skipAuto[s.PieceID] = true
 			}
@@ -1809,7 +1809,7 @@ func (a *App) handleDiarioGiorno(w http.ResponseWriter, r *http.Request) {
 		}
 		kept := data.Entries[i].Sessions[:0]
 		for _, s := range data.Entries[i].Sessions {
-			if s.Note != "auto-saltato" {
+			if s.Note != "auto-skipped" {
 				kept = append(kept, s)
 			}
 		}
@@ -1974,7 +1974,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, ok := a.queryRows(w, `SELECT id, date, piece_id, minutes, confidence, note, tempo FROM sessions
+	rows, ok := a.queryRows(w, `SELECT id, date, piece_id, minutes, confidence, note, bpm FROM sessions
 		WHERE piece_id=? ORDER BY date DESC, id DESC`, p.ID)
 	if !ok {
 		return
@@ -1984,7 +1984,7 @@ func (a *App) handlePezzoDetail(w http.ResponseWriter, r *http.Request) {
 	var cps []confPoint // oldest -> newest for the sparkline
 	for rows.Next() {
 		var s Session
-		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.Tempo); err != nil {
+		if err := rows.Scan(&s.ID, &s.Date, &s.PieceID, &s.Minutes, &s.Confidence, &s.Note, &s.BPM); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

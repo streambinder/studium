@@ -55,7 +55,7 @@
 </div>
 <div class="row">
 <label>Sicurezza <input type="range" name="confidence" min="1" max="5" step="1" value="3" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>3/5</output></label>
-<label>Metronomo (BPM) <input type="number" name="tempo" min="1" max="400" placeholder="opzionale"></label>
+<label>Metronomo (BPM) <input type="number" name="bpm" min="1" max="400" placeholder="opzionale"></label>
 </div>
 <div class="row btns">
 <button type="submit">Registra</button>
@@ -159,7 +159,7 @@
 <label>Minuti <input type="number" name="minutes" value="{{.Minutes}}" min="0" max="600"></label>
 <label>Sicurezza <input type="range" name="confidence" min="1" max="5" step="1" value="{{printf "%.0f" .Conf}}" oninput="this.nextElementSibling.textContent=this.value+'/5'"> <output>{{printf "%.0f" .Conf}}/5</output></label>
 </div>
-<label>Metronomo (BPM) <input type="number" name="tempo" min="1" max="400" placeholder="opzionale"></label>
+<label>Metronomo (BPM) <input type="number" name="bpm" min="1" max="400" placeholder="opzionale"></label>
 <label>Nota <input type="text" name="note" placeholder="come è andata?"></label>
 <div class="row btns">
 <button type="submit" formaction="/sessione">Registra</button>
