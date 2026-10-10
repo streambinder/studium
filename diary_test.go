@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	_ "modernc.org/sqlite"
@@ -72,5 +75,44 @@ func TestPrepTilesForFiltersByConcorso(t *testing.T) {
 	}
 	if len(both) != 3 {
 		t.Fatalf("auditions 1+2 (union): want 3 tiles, got %d", len(both))
+	}
+}
+
+// The diary index lists only days with at least one session longer
+// than zero minutes; days holding only baselines or skip markers stay
+// out of the list.
+func TestDiaryIndexHidesZeroMinuteDays(t *testing.T) {
+	db, err := sql.Open("sqlite", ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := migrate(db); err != nil {
+		t.Fatalf("migrate failed: %v", err)
+	}
+	stmts := []string{
+		`INSERT INTO pieces(id, composer, work, kind, difficulty) VALUES(1, 'Alfa', 'Pezzo', 'excerpt', 3)`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-05', 1, 30, 4, '')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-06', 1, 0, 3, 'baseline')`,
+		`INSERT INTO sessions(date, piece_id, minutes, confidence, note) VALUES('2026-10-06', 1, 0, 0, 'skipped')`,
+	}
+	for _, s := range stmts {
+		if _, err := db.Exec(s); err != nil {
+			t.Fatalf("seed: %v", err)
+		}
+	}
+	a := &App{db: db}
+	req := httptest.NewRequest(http.MethodGet, "/diary", nil)
+	rec := httptest.NewRecorder()
+	a.handleDiary(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("diary status = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `href="/diary/day/2026-10-05"`) {
+		t.Error("day with logged minutes missing from the diary index")
+	}
+	if strings.Contains(body, `href="/diary/day/2026-10-06"`) {
+		t.Error("zero-minute day present in the diary index")
 	}
 }

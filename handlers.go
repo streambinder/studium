@@ -1705,7 +1705,7 @@ func auditionFilterHref(sel map[int64]bool) string {
 func (a *App) handleDiary(w http.ResponseWriter, r *http.Request) {
 	rows, ok := a.queryRows(w, `SELECT date, COALESCE(SUM(minutes),0),
 		COUNT(DISTINCT CASE WHEN minutes > 0 THEN piece_id END)
-		FROM sessions GROUP BY date ORDER BY date DESC`)
+		FROM sessions GROUP BY date HAVING MAX(minutes) > 0 ORDER BY date DESC`)
 	if !ok {
 		return
 	}
