@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -159,5 +161,92 @@ func TestDiaryTileGeometryUsesDotDecimalsInItalian(t *testing.T) {
 	}
 	if strings.Contains(body, ",0%") || strings.Contains(body, ",6%") {
 		t.Error("tile geometry contains comma decimals in Italian rendering")
+	}
+}
+
+func TestLangChoiceAndSetLanguage(t *testing.T) {
+	_, mux, _ := covApp(t)
+	req := httptest.NewRequest(http.MethodGet, "/settings", nil)
+	if got := langChoice(req); got != "auto" {
+		t.Errorf("langChoice without cookie: want auto, got %q", got)
+	}
+	req.AddCookie(&http.Cookie{Name: "lang", Value: "de"})
+	if got := langChoice(req); got != "de" {
+		t.Errorf("langChoice with cookie: want de, got %q", got)
+	}
+	req2 := httptest.NewRequest(http.MethodGet, "/settings", nil)
+	req2.AddCookie(&http.Cookie{Name: "lang", Value: "xx"})
+	if got := langChoice(req2); got != "auto" {
+		t.Errorf("langChoice with invalid cookie: want auto, got %q", got)
+	}
+
+	code, _, hdr := covPost(t, mux, "/settings/language", url.Values{"lang": {"it"}})
+	if code != http.StatusSeeOther || hdr.Get("Location") != "/settings" {
+		t.Fatalf("set language: want 303 to /settings, got %d", code)
+	}
+	if sc := hdr.Get("Set-Cookie"); !strings.Contains(sc, "lang=it") {
+		t.Errorf("set language cookie: got %q", sc)
+	}
+	code, _, hdr = covPost(t, mux, "/settings/language", url.Values{"lang": {"auto"}})
+	if code != http.StatusSeeOther {
+		t.Fatalf("set language auto: want 303, got %d", code)
+	}
+	if sc := hdr.Get("Set-Cookie"); !strings.Contains(sc, "Max-Age=0") {
+		t.Errorf("set language auto must clear the cookie: got %q", sc)
+	}
+	if code, _, _ := covPost(t, mux, "/settings/language", url.Values{"lang": {"xx"}}); code != http.StatusBadRequest {
+		t.Errorf("set language invalid: want 400, got %d", code)
+	}
+	if code, _, _ := covPost(t, mux, "/settings/language", url.Values{}); code != http.StatusBadRequest {
+		t.Errorf("set language missing: want 400, got %d", code)
+	}
+}
+
+func TestClientIPBranches(t *testing.T) {
+	build := func(xff, realIP, remote string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		if xff != "" {
+			r.Header.Set("X-Forwarded-For", xff)
+		}
+		if realIP != "" {
+			r.Header.Set("X-Real-IP", realIP)
+		}
+		r.RemoteAddr = remote
+		return r
+	}
+	cases := []struct {
+		name                string
+		xff, realIP, remote string
+		want                string
+	}{
+		{"xff first public", "8.8.8.8, 10.0.0.1", "", "192.168.1.1:80", "8.8.8.8"},
+		{"xff garbage then public", "garbage, 1.1.1.1", "", "192.168.1.1:80", "1.1.1.1"},
+		{"xff private only, real ip", "10.0.0.1", "9.9.9.9", "192.168.1.1:80", "9.9.9.9"},
+		{"real ip invalid, remote", "", "garbage", "9.9.9.9:1234", "9.9.9.9"},
+		{"remote without port", "", "", "9.9.9.9", "9.9.9.9"},
+		{"all private", "10.0.0.1", "192.168.0.2", "172.16.0.5:80", ""},
+		{"remote invalid", "", "", "garbage", ""},
+	}
+	for _, c := range cases {
+		ip := clientIP(build(c.xff, c.realIP, c.remote))
+		got := ""
+		if ip != nil {
+			got = ip.String()
+		}
+		if got != c.want {
+			t.Errorf("%s: want %q, got %q", c.name, c.want, got)
+		}
+	}
+	if got := countryLanguage(net.ParseIP("151.99.1.1")); got != "it" {
+		t.Errorf("countryLanguage italian IP: got %q", got)
+	}
+	if got := countryLanguage(net.ParseIP("127.0.0.1")); got != "" {
+		t.Errorf("countryLanguage loopback: want empty, got %q", got)
+	}
+	if got := countryLanguage(net.IP{1, 2, 3}); got != "" {
+		t.Errorf("countryLanguage malformed IP: want empty, got %q", got)
+	}
+	if got := countryLanguage(net.IP{}); got != "" {
+		t.Errorf("countryLanguage empty IP: want empty, got %q", got)
 	}
 }
