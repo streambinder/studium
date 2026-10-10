@@ -6,7 +6,9 @@
 </div>
 
 <section class="panel reveal">
-<div class="section-head"><h2>{{t "pieces.add_title"}}</h2></div>
+<details>
+<summary>{{t "pieces.add_title"}}</summary>
+<div class="details-body"><div>
 <form method="post" action="/pieces">
 <div class="row">
 <label>{{t "field.composer"}} <input type="text" name="composer" required></label>
@@ -26,6 +28,8 @@
 </fieldset>
 <button type="submit">{{t "common.add"}}</button>
 </form>
+</div></div>
+</details>
 </section>
 
 <form method="get" action="/pieces" class="filters panel reveal">

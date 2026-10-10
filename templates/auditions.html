@@ -6,7 +6,9 @@
 </div>
 
 <section class="panel reveal">
-<div class="section-head"><h2>{{t "auditions.new_title"}}</h2></div>
+<details>
+<summary>{{t "auditions.new_title"}}</summary>
+<div class="details-body"><div>
 <form method="post" action="/auditions">
 <div class="row">
 <label>{{t "field.name"}} <input type="text" name="name" required placeholder="{{t "auditions.name_ph"}}"></label>
@@ -30,6 +32,8 @@
 <button type="submit">{{t "common.add"}}</button>
 </form>
 <p class="meta">{{t "auditions.links_note_a"}}<a href="/pieces">{{t "nav.pieces"}}</a>{{t "auditions.links_note_b"}}</p>
+</div></div>
+</details>
 </section>
 
 <div class="stack">
