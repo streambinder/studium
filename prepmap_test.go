@@ -262,3 +262,31 @@ func TestMigrateDifficultyIdempotent(t *testing.T) {
 		t.Fatalf("difficulty not writable: %v", err)
 	}
 }
+
+func TestPrepScoreExtremeConfidenceClamps(t *testing.T) {
+	today := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	high := []prepSession{{Date: "2026-10-09", Minutes: 60, Confidence: 99}}
+	score, _, _, _ := prepScore(3, high, today)
+	if score > 1 {
+		t.Fatalf("score above the cap: got %v", score)
+	}
+	low := []prepSession{{Date: "2026-10-09", Minutes: 60, Confidence: -99}}
+	score, _, _, _ = prepScore(3, low, today)
+	if score < 0 {
+		t.Fatalf("score below zero: got %v", score)
+	}
+}
+
+func TestLayoutVirtualClampsDifficulty(t *testing.T) {
+	tiles := []prepTile{
+		{PieceID: 1, Difficulty: 0},
+		{PieceID: 2, Difficulty: -3},
+		{PieceID: 3, Difficulty: 4},
+	}
+	layoutTreemap(tiles, 0, 0, 100, 100, prepBiasDesktop)
+	for _, tile := range tiles {
+		if tile.W <= 0 || tile.H <= 0 {
+			t.Fatalf("tile with clamped difficulty has no area: %+v", tile)
+		}
+	}
+}

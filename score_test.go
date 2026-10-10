@@ -175,3 +175,15 @@ func TestAllocateMinutesEmptyOrZeroBudget(t *testing.T) {
 		t.Fatalf("got %v, want [0 0]", got)
 	}
 }
+
+func TestAllocateMinutesZeroTotal(t *testing.T) {
+	out := AllocateMinutes([]float64{0, 0, 0}, 120, 8)
+	if len(out) != 3 {
+		t.Fatalf("want 3 slots, got %v", out)
+	}
+	for _, m := range out {
+		if m != 0 {
+			t.Fatalf("zero scores must allocate zero minutes, got %v", out)
+		}
+	}
+}
